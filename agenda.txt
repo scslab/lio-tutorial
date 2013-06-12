@@ -2,16 +2,30 @@
    
     9:00-9:30 Arrival and breakfast/coffee
     9:30-10:00  Introductions and welcome
-    10:00-Noon Tutorial
+    10:00-Noon Tutorial - Intro to Haskell
+      * Simple sockets
+      * IORefs, MVars, threads
     Noon-1:00 Lunch in the cafeteria
     1:00-5:00 Tutorial
+      * Rock-paper-scissors in IO
+      * Last hour: DCLabels + LIO + how could we apply this to RPS
    
     Tuesday
    
     9:00-9:30  Arrival and breakfast/coffee
     9:30-Noon  Tutorial
+      9:30-10:00 -> DCLabels + LIO intro
+      10:00-10:30 -> Setup + Toy DCLabels + LIO exercise
+      11:00-11:30 -> DCLabels + LIO intro 2 (privileges and declassification)
+      11:30-Noon -> More advanced DCLabels + LIO exercise
     Noon-1:00 Lunch in the cafeteria
     1:00-5:00 Tutorial
+      * Labeled sockets
+      * Threads
+      * Writing TCB code
+      * Labeled multi-player Rock-paper-scissors
+      Extras:
+      * Hails stuff
     4:00-5:00 Seminar/Talk
 
 
