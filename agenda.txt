@@ -13,13 +13,13 @@
     Tuesday
    
     9:00-9:30  Arrival and breakfast/coffee
-    9:30-Noon  Tutorial
+    9:30-Noon  Tutorial (deian)
       9:30-10:00 -> DCLabels + LIO intro
       10:00-10:30 -> Setup + Toy DCLabels + LIO exercise
       11:00-11:30 -> DCLabels + LIO intro 2 (privileges and declassification)
       11:30-Noon -> More advanced DCLabels + LIO exercise
     Noon-1:00 Lunch in the cafeteria
-    1:00-5:00 Tutorial
+    1:00-5:00 Tutorial (alevy)
       * Labeled sockets
       * Threads
       * Writing TCB code
