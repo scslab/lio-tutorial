@@ -48,14 +48,14 @@ main = withSocketsDo $ do
     
     (h1, n1, p1) <- accept s
     hSetBuffering h1 LineBuffering
-    putStrLn $ "Player1: " ++ n1 ++ ":" ++ show p1
+    catch (hPutStrLn h1 "Waiting for another player...")
+      $ \(SomeException _) -> return ()
     forkIO $ play h1 mv1 mv2 `finally` do
       tryPutMVar mv1 $ error "The other player is dead"
       hClose h1
 
     (h2, n2, p2) <- accept s
     hSetBuffering h2 LineBuffering
-    putStrLn $ "Player2: " ++ n2 ++ ":" ++ show p2
     forkIO $ play h2 mv2 mv1 `finally` do
       tryPutMVar mv2 $ error "The other player is dead"
       hClose h2
