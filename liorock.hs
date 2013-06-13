@@ -3,7 +3,7 @@
 module Main where
 
 import Control.Concurrent
-import qualified Control.Exception as IO
+import Control.Exception (SomeException(..))
 import Control.Monad
 import qualified Data.ByteString.Char8 as S8
 import Data.Monoid
@@ -103,7 +103,9 @@ play h mvUs mvThem = do
 dcmain :: Socket -> DC ()
 dcmain s = do
   (h1, _, _) <- acceptP refereePriv s
-  hPutStrLnP refereePriv h1 "Waiting for another player..."
+  catchLIOP refereePriv
+    (hPutStrLnP refereePriv h1 "Waiting for another player...")
+    $ \(SomeException _) -> return ()
   (h2, _, _) <- acceptP refereePriv s
   mv1 <- newEmptyLMVar (labelOf h1)
   mv2 <- newEmptyLMVar (labelOf h2)
