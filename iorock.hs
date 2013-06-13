@@ -49,13 +49,13 @@ main = withSocketsDo $ do
     hSetBuffering h1 LineBuffering
     putStrLn $ "Player1: " ++ n1 ++ ":" ++ show p1
     _ <- forkIO $ play h1 mv1 mv2 `finally` do
-      _ <- tryPutMVar mv1 $ error "The other player is dead"
+      -- _ <- tryPutMVar mv1 $ error "The other player is dead"
       hClose h1
 
     (h2, n2, p2) <- accept s
     hSetBuffering h2 LineBuffering
     putStrLn $ "Player2: " ++ n2 ++ ":" ++ show p2
     forkIO $ play h2 mv2 mv1 `finally` do
-      _ <- tryPutMVar mv2 $ error "The other player is dead"
+      -- _ <- tryPutMVar mv2 $ error "The other player is dead"
       hClose h2
 
