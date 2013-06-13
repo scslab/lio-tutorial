@@ -34,8 +34,9 @@ play :: Handle -> MVar Move -> MVar Move -> IO ()
 play h mvUs mvThem = do
   us <- getMove h
   putMVar mvUs us
-  them <- readMVar mvThem
-  hPutStrLn h $ "You " ++ show (outcome us them)
+  them <- takeMVar mvThem
+  let o = outcome us them
+  hPutStrLn h $ "You " ++ show o
     
 main :: IO ()
 main = withSocketsDo $ do
@@ -48,14 +49,13 @@ main = withSocketsDo $ do
     (h1, n1, p1) <- accept s
     hSetBuffering h1 LineBuffering
     putStrLn $ "Player1: " ++ n1 ++ ":" ++ show p1
-    _ <- forkIO $ play h1 mv1 mv2 `finally` do
-      -- _ <- tryPutMVar mv1 $ error "The other player is dead"
+    forkIO $ play h1 mv1 mv2 `finally` do
+      tryPutMVar mv1 $ error "The other player is dead"
       hClose h1
 
     (h2, n2, p2) <- accept s
     hSetBuffering h2 LineBuffering
     putStrLn $ "Player2: " ++ n2 ++ ":" ++ show p2
     forkIO $ play h2 mv2 mv1 `finally` do
-      -- _ <- tryPutMVar mv2 $ error "The other player is dead"
+      tryPutMVar mv2 $ error "The other player is dead"
       hClose h2
-
