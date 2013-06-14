@@ -46,7 +46,7 @@ main = withSocketsDo $ do
     mv1 <- newEmptyMVar
     mv2 <- newEmptyMVar
     
-    (h1, n1, p1) <- accept s
+    (h1, _, _) <- accept s
     hSetBuffering h1 LineBuffering
     catch (hPutStrLn h1 "Waiting for another player...")
       $ \(SomeException _) -> return ()
@@ -54,7 +54,7 @@ main = withSocketsDo $ do
       tryPutMVar mv1 $ error "The other player is dead"
       hClose h1
 
-    (h2, n2, p2) <- accept s
+    (h2, _, _) <- accept s
     hSetBuffering h2 LineBuffering
     forkIO $ play h2 mv2 mv1 `finally` do
       tryPutMVar mv2 $ error "The other player is dead"
