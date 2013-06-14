@@ -1,0 +1,30 @@
+Name:           ll-examples
+Version:        0.0.0.0
+build-type:     Simple
+License:        GPL-2
+License-File:   LICENSE
+Author:         Hails team
+Maintainer:     Hails team <hails at scs dot stanford dot edu>
+Synopsis:       LL tutorial examples
+Cabal-Version:  >= 1.8
+
+Description:
+  Tutorial examples
+
+
+Executable iorock
+  Main-is: iorock.hs
+  ghc-options: -package ghc -Wall -fno-warn-orphans -fno-warn-unused-do-bind
+  Build-Depends:
+    base              >= 4.5     && < 5.0
+   ,bytestring
+   ,network
+
+Executable liorock
+  Main-is: liorock.hs
+  ghc-options: -package ghc -Wall -fno-warn-orphans -fno-warn-unused-do-bind
+  Build-Depends:
+    base              >= 4.5     && < 5.0
+   ,lio
+   ,bytestring
+   ,network
