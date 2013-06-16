@@ -2,6 +2,5 @@
 *.o
 *~
 /.cabal-sandbox
-/cabal.sandbox.config
 /iorock
-/liorock
+cabal.sandbox.config
