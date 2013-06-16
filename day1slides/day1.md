@@ -571,6 +571,8 @@ Note function `error :: String -> a` reports assertion failures
     process = countLowercase . toPigLatin . extractComments . unCompress
     ~~~
 
+* Exercise: Write the type of "`.`" without typing `:t (.)` into ghci
+
 # Lambda abstraction
 
 * Sometimes you want to name the arguments but not the function
@@ -617,6 +619,59 @@ Note function `error :: String -> a` reports assertion failures
     stripPunctuation = filter (`notElem` "!#$%&*+./<=>?@\\^|-~:")
     -- Note above string the SECOND argument to notElem ^
     ~~~
+
+# Exercise:  Point free notation and infix functions
+
+* Consider the following function
+
+    ~~~ {.haskell}
+    oo :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+    (f `oo` g) a b = f (g a b)
+    ~~~
+
+    or equivalently:
+
+    ~~~ {.haskell}
+    oo f g a b = f (g a b)
+    ~~~
+
+    * It's like composition '(.)' but feeds _two_ arguments to g
+
+* Implement 'oo' using point-free notation (not naming `a`, `b`, `f`,
+  `g`):
+
+    ~~~ {.haskell}
+    oo :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+    oo = ???
+    ~~~
+
+    * Possible using only functions we have seen so far
+    * Hint: Possible using only `.`!
+
+# Answer
+
+~~~ {.haskell}
+oo :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+oo = (.) . (.)
+~~~
+
+* Can get there step by step:
+    * Whenever definition ends in function application, use "`.`":  
+      `oo` _xxx_ `t =` _yyy_ `(h t)` &#x27f6; `oo` _xxx_ `=` _yyy_ `. h`
+    * Rewrite infix "`.`" to prefix "`(.)`"
+    * Chop off common arguments:  
+      `oo` _xxx_ `t =` _yyy_ `t` &#x27f6; `oo` _xxx_ `=` _yyy_
+    * Repeat
+
+~~~ {.haskell}
+oo f g a b = f (g a b)
+oo f g a = f . (g a)
+oo f g a = (.) f (g a)
+oo f g = (.) f . g
+oo f g = (.) ((.) f) g
+oo f = (.) ((.) f)
+oo = (.) . (.)
+~~~
 
 # Fixity
 
@@ -747,16 +802,22 @@ factorial n0 = loop 1 n0
         ~~~
 
     * May want to add `$HOME/.cabal/bin` to your path
-* To install packages for the next examples, run
+* To install packages for today, run
+
 
     ~~~
-    cabal install http-enumerator utf8-string tagsoup
+    cabal install lio
     ~~~
 
     * Installs packages in `$HOME/.cabal`, and records them in
       `$HOME/.ghc`
     * To start fresh, must delete both `$HOME/.cabal` and `$HOME/.ghc`
 
+<!--
+    ~~~
+    cabal install http-enumerator utf8-string tagsoup
+    ~~~
+-->
 
 # Modules and `import` syntax
 
