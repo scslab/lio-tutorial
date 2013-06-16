@@ -332,6 +332,7 @@
     isRed c   = False       -- Lower-case c just a variable
     ~~~
 
+
 # Exercise:  Rock, Paper, Scissors referee
 
 * Define a type `Move` representing a move in a rock paper scissors
@@ -370,7 +371,6 @@ outcome Scissors Paper       = Win
 outcome us them | us == them = Tie
                 | otherwise  = Lose
 ~~~
-
 
 # Parameterized types
 
@@ -463,6 +463,36 @@ outcome us them | us == them = Tie
 
 * A `String` is just a list of `Char`, so `['a', 'b', 'c'] == "abc"`
 
+# Parsing data types with `deriving Read` and `reads`
+
+* We've been using "`deriving Show`" and `show` to print values
+    * By default `show` show gives you a valid Haskell expression
+
+	~~~
+	*Main> show $ Point 1.0 1.0
+	"Point 1.0 1.0"               <-- could paste string into your source
+	~~~
+
+* "`deriving Read`" lets you parse a value at run time
+
+    ~~~ {.haskell}
+    data Point = Point Double Double deriving (Show, Read)
+    ~~~
+
+    * Problem: Might be 0, 1, or (if ambiguous) more possible parsings
+    * Function `reads` parses and returns `[(value, string_with_rest_of_input)]`
+
+    ~~~
+    *Main> reads "invalid Point 1 2" :: [(Point, String)]
+    []
+    *Main> reads "Point 1 2" :: [(Point, String)]
+    [(Point 1.0 2.0,"")]
+    *Main> reads "Point 1 2 and some extra stuff" :: [(Point, String)]
+    [(Point 1.0 2.0," and some extra stuff")]
+    *Main> reads "(Point 1 2)" :: [(Point, String)] -- note parens OK
+    [(Point 1.0 2.0,"")]
+    ~~~
+
 # Some basic list functions in Prelude
 
 ~~~ {.haskell}
@@ -498,6 +528,53 @@ filter pred (x:xs)
 ~~~
 
 Note function `error :: String -> a` reports assertion failures
+
+# Exercise: Using `reads`
+
+* Write a function to parse moves:
+
+    ~~~ {.haskell}
+    parseMove :: String -> Maybe Move
+    ~~~
+
+    * Return `Just` move on successful parse, `Nothing` otherwise
+    * Can optionally accept whitespace or parentheses if easier
+    * But should reject a string with any trailing content after move
+
+* Examples of use:
+
+~~~ {.haskell}
+*Main> parseMove "Rock"
+Just Rock
+*Main> parseMove "Paper"
+Just Paper
+*Main> parseMove "Scissors plus extra junk"
+Nothing
+~~~
+
+
+# Possible solutions
+
+~~~ {.haskell}
+parseMove :: String -> Maybe Move
+parseMove "Rock"     = Just Rock
+parseMove "Paper"    = Just Paper
+parseMove "Scissors" = Just Scissors
+parseMove _          = Nothing
+~~~
+
+* Note how strings are constructors---you can pattern match on them
+
+~~~ {.haskell}
+parseMove :: String -> Maybe Move
+parseMove str = case reads str of [(m, "")] -> Just m
+                                  _         -> Nothing
+~~~
+
+* Here return type of `reads` implicitly constrained by 
+  `parseMove`'s type declaration
+    * Removing `parseMove`'s type would make calling it difficult
+
 
 # Hoogle
 
@@ -653,15 +730,15 @@ Note function `error :: String -> a` reports assertion failures
 ~~~ {.haskell}
 oo :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 oo = (.) . (.)
+oo = (.) (.) (.) -- equivalent
 ~~~
 
-* Can get there step by step:
-    * Whenever definition ends in function application, use "`.`":  
+* Can get there step-by-step using the following tricks:
+    * Whenever definition ends in function application, can use "`.`":  
       `oo` _xxx_ `t =` _yyy_ `(h t)` &#x27f6; `oo` _xxx_ `=` _yyy_ `. h`
-    * Rewrite infix "`.`" to prefix "`(.)`"
-    * Chop off common arguments:  
+    * Whenever function and definition end with same argument, chop:  
       `oo` _xxx_ `t =` _yyy_ `t` &#x27f6; `oo` _xxx_ `=` _yyy_
-    * Repeat
+    * Rewrite infix "`.`" to prefix "`(.)`"
 
 ~~~ {.haskell}
 oo f g a b = f (g a b)
@@ -832,9 +909,10 @@ factorial n0 = loop 1 n0
 
     ~~~~ {.haskell}
     module Main where      -- redundant since Main is the default
-    import qualified Data.ByteString.Lazy.UTF8 as L
-    import Data.Char
-    import Network.HTTP.Enumerator (simpleHttp)
+    import Network (PortID(..))
+    import qualified Network as IO
+    import System.IO (BufferMode(..))
+    import qualified System.IO as IO
     import System.Environment
     ~~~~
 
