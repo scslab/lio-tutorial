@@ -1905,6 +1905,22 @@ Nothing
 
     * Result of cleanup action (`b`) is discarded
 
+* `bracket` brackets code with initialization and cleanup
+
+    ~~~~ {.haskell}
+    bracket :: IO a -> (a -> IO b) -> (a -> IO c) -> IO c
+    --        ^init^   ^^cleanup^^    ^^action^^^
+    ~~~~
+
+    * Example
+
+    ~~~~ {.haskell}
+    sayhi :: IO ()
+    sayhi = bracket (connectTo "localhost" $ PortNumber 1234) hClose $ \h -> do
+      hPutStrLn h "hello"
+    ~~~~
+
+<!--
 * `catchJust` catches only exceptions matching a predicate on value
 
     ~~~~ {.haskell}
@@ -1921,10 +1937,208 @@ Nothing
     *Main> readFileIfExists "/etc/shadow"
     *** Exception: /etc/shadow: openFile: permission denied ...
     ~~~~
+-->
 
 
-# Threads
+# Haskell threads
 
+* Haskell implements user-level threads in [`Control.Concurrent`]
+
+    * Threads are lightweight (in both time and space)
+    * Use threads where in other languages would use cheaper constructs
+    * Runtime emulates blocking OS calls in terms of non-blocking ones
+    * Thread-switch can happen any time GC could be invoked
+
+* `forkIO` call creates a new thread:
+
+    ~~~~ {.haskell}
+    forkIO :: IO () -> IO ThreadId    -- creates a new thread
+    ~~~~
+
+* Can also get your own thread ID:
+
+    ~~~~ {.haskell}
+    myThreadId :: IO ThreadId
+    ~~~~
+
+# Exercise:  Multi-user Rock, Paper, Scissors
+
+* Create a function `withClients` that accepts multiple connections
+    * Should run function once for each user in parallel (with threads)
+    * Should allow concurrent games of Rock, Paper, Scissors as
+      follows
+
+    ~~~~
+    *Main> withClients (PortNumber 1617) (computerVsUser Rock)
+    ~~~~
+
+    * Connect from multiple terminals in parallel to test that you are
+      actually concurrent
+
+    ~~~~
+    $ nc localhost 1617
+    Please enter one of [Rock,Paper,Scissors]
+    Rock
+    You Tie
+    ~~~~
+
+# Solution
+
+~~~~ {.haskell}
+withClients :: PortID -> (IO.Handle -> IO ()) -> IO ()
+withClients listenPort fn = bracket (IO.listenOn listenPort) sClose $ \s ->
+  let loop = do
+        (h, host, port) <- IO.accept s
+        putStrLn $ "Connection from host " ++ host ++ " port " ++ show port
+        forkIO $ fn h `finally` IO.hClose h
+        loop
+  in loop
+~~~~
+
+# [`MVar`s][`MVar`]
+
+* The [`MVar`] type lets threads communicate via shared variables
+
+    * An `MVar t` is a mutable variable of type `t` that is either
+      *full* or *empty*
+
+    ~~~~ {.haskell}
+    newEmptyMVar :: IO (MVar a)  -- create empty MVar
+    newMVar :: a -> IO (MVar a)  -- create full MVar given val
+
+    takeMVar :: MVar a -> IO a
+    putMVar :: MVar a -> a -> IO ()
+    ~~~~
+
+    * If an `MVar` is full, `takeMVar` makes it empty and returns
+      former contents
+    * If an `MVar` is empty, `putMVar` fills it with a value
+    * Taking an empty `MVar` or putting a full one puts thread to
+      sleep until `MVar` becomes available
+    * Only one thread awakened at a time if several blocked on same
+      `MVar`
+    * There are also non-blocking versions of `MVar` calls
+
+    ~~~~ {.haskell}
+    tryTakeMVar :: MVar a -> IO (Maybe a) -- Nothing if empty
+    tryPutMVar :: MVar a -> a -> IO Bool  -- False if full
+    ~~~~
+
+# Working with `MVar`s
+
+* `MVar`s work just fine as a mutex:
+
+    ~~~~ {.haskell}
+    type Mutex = MVar ()
+
+    mutex_create :: IO Mutex
+    mutex_create = newMVar ()
+
+    mutex_lock, mutex_unlock :: Mutex -> IO ()
+    mutex_lock = takeMVar
+    mutex_unlock mv = putMVar mv ()
+
+    mutex_synchronize :: Mutex -> IO a -> IO a
+    mutex_synchronize mv action =
+        bracket (mutex_lock mv) (\_ -> mutex_unlock mv)
+                    (\_ -> action)
+    ~~~~
+
+* Note anyone can unlock a `Mutex` if it is locked
+    * How would you throw assertion failure if caller doesn't hold lock?
+
+# Alternate `Mutex`
+
+* Use *full* `MVar` rather than empty to mean lock held
+
+    ~~~~ {.haskell}
+    type Mutex = MVar ThreadId
+
+    mutex_create :: IO Mutex
+    mutex_create = newEmptyMVar
+
+    mutex_lock, mutex_unlock :: Mutex -> IO ()
+
+    mutex_lock mv = myThreadId >>= putMVar mv
+
+    mutex_unlock mv = do mytid <- myThreadId
+                         lockTid <- tryTakeMVar mv
+                         unless (lockTid == Just mytid) $
+                             error "mutex_unlock"
+    ~~~~
+
+    * Store `ThreadId` of lock owner in `MVar`
+
+* How would you implement a condition variable?
+    * Many uses of condition variables don't work with async
+      exceptions
+    * So let's not worrying about `mask` for this question...
+
+# Condition variables
+
+~~~~ {.haskell}
+data Cond = Cond Mutex (MVar [MVar ()])
+
+cond_create :: Mutex -> IO Cond
+cond_create m = do
+  waiters <- newMVar []
+  return $ Cond m waiters
+
+cond_wait, cond_signal, cond_broadcast :: Cond -> IO ()
+cond_wait (Cond m waiters) = do
+  me <- newEmptyMVar
+  modifyMVar_ waiters $ \others -> return $ others ++ [me]
+  mutex_unlock m   -- note we don't care if preempted here after this
+  takeMVar me `finally` mutex_lock m
+  
+cond_signal (Cond _ waiters) = modifyMVar_ waiters wakeone
+    where wakeone [] = return []
+          wakeone (w:ws) = putMVar w () >> return ws
+
+cond_broadcast (Cond _ waiters) = modifyMVar_ waiters wakeall
+    where wakeall ws = mapM_ (flip putMVar ()) ws >> return []
+~~~~
+
+* Key idea: putting `MVar`s inside `MVar`s is very powerful
+
+# Channels
+
+* [`Control.Concurrent.Chan`] provides unbounded *channels*
+    * Implemented as two `MVar`s -- for read and and write end of `Stream`
+
+    ~~~~ {.haskell}
+    data Item a = Item a (Stream a)
+    type Stream a = MVar (Item a)
+    data Chan a = Chan (MVar (Stream a)) (MVar (Stream a))
+    ~~~~
+
+![](chan.svg)
+
+# Channel implementation [simplified]
+
+~~~~ {.haskell}
+data Item a = Item a (Stream a)
+type Stream a = MVar (Item a)
+data Chan a = Chan (MVar (Stream a)) (MVar (Stream a))
+
+newChan :: IO (Chan a)
+newChan = do
+  empty <- newEmptyMVar
+  liftM2 Chan (newMVar empty) (newMVar empty)
+
+writeChan :: Chan a -> a -> IO ()
+writeChan (Chan _ w) a = do
+  empty <- newEmptyMVar
+  modifyMVar_ w $ \oldEmpty -> do
+    putMVar oldEmpty (Item a empty)
+    return empty
+
+readChan :: Chan a -> IO a
+readChan (Chan r _) =
+    modifyMVar r $ \full -> do
+      (Item a newFull) <- takeMVar full
+      return (newFull, a)
+~~~~
 
 
 
@@ -1954,7 +2168,6 @@ Nothing
 
 * Starting with GHC 7.2, `-XSafe` option enables
   [Safe Haskell][SafeHaskell]
-    * Courtesy of our very own CA, David Terei
 * Safe Haskell disallows import of any unsafe modules
     * E.g., can't import `System.IO.Unsafe`, so can't call `unsafePerformIO`
 * Safe imports (enabled by `-XSafeImports`) require an import to be safe
