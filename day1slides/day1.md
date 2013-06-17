@@ -722,8 +722,11 @@ parseMove str = case reads str of [(m, "")] -> Just m
     oo = ???
     ~~~
 
-    * Possible using only functions we have seen so far
-    * Hint: Possible using only `.`!
+    * Hint 1: eliminate one arg at a time (define `oo f g a = ...`,
+      then `oo f g = ...`)
+    * Hint 2: Remember "`f . g`" is the same as "`(.) f g`"  
+      (The answer may be easier to see when staring at prefix
+      notation)
 
 # Answer
 
@@ -911,9 +914,8 @@ factorial n0 = loop 1 n0
     module Main where      -- redundant since Main is the default
     import Network (PortID(..))
     import qualified Network as IO
-    import System.IO (BufferMode(..))
+    import System.IO (BufferMode(..), IOMode(..))
     import qualified System.IO as IO
-    import System.Environment
     ~~~~
 
     * Start module with "`module` *name* `where`" or "`module` *name*
@@ -927,18 +929,45 @@ factorial n0 = loop 1 n0
 
 # `do` notation
 
-* Let's write a program to dump a web page
+* Let's write a function to greet someone
 
 ~~~ {.haskell}
-main = do
-  (url:_) <- getArgs       -- Sets url to first command-line argument
-  page <- simpleHttp url   -- Sets page to contents as a ByteString
-  putStr (L.toString page) -- Converts ByteString to String and prints it
+greet h = do
+  IO.hPutStrLn h "What is your name?"
+  name <- IO.hGetLine h
+  IO.hPutStrLn h $ "Hi, " ++ name
+
+withTty = IO.withFile "/dev/tty" ReadWriteMode
+
+main = withTty greet
 ~~~
 
-* This task requires some impure (non-functional) actions
-    * Extracting command-line args, creating a TCP connection, writing
-      to stdout
+* Can the code like this in GHCI
+
+~~~
+*Main> main
+What is your name?
+David
+Hi, David
+~~~
+
+* Or from the command line:
+
+~~~
+$ runghc ./greet.hs
+~~~
+
+# `do` notation
+
+~~~ {.haskell}
+greet h = do
+  IO.hPutStrLn h "What is your name?"
+  name <- IO.hGetLine h
+  IO.hPutStrLn h $ "Hi, " ++ name
+~~~
+
+* Greeting task requires some impure (non-functional) actions
+    * Reading and writing a file handle
 * A `do` block lets you sequence IO actions.  In a `do` block:
     * <span style="color:blue">*pat* `<-` *action*</span> - binds
       *pat* (variable or constructor pattern) to result of executing
@@ -956,41 +985,42 @@ main = do
 
 ~~~~ {.haskell}
 main :: IO ()
-getArgs :: IO [String]
-simpleHttp :: String -> IO L.ByteString -- (really more polymorphic)
-putStr :: String -> IO ()
+greet :: IO.Handle -> IO ()
+IO.hPutStrLn :: IO.Handle -> String -> IO ()
+IO.hGetLine :: IO.Handle -> IO String
 ~~~~
 
 * `IO` is a parameterized type (just as `Maybe` is parameterized)
-    * "`IO [String]`" means IO action that produces a
-      `[String]` if executed
+    * "`IO String`" means IO action that produces a
+      `String` if executed
     * Unlike `Maybe`, we won't use a constructor for `IO`, which is
       somewhat magic
-* What if we try to print the first command-line argument as follows?
+* What if we try to copy a line of input as follows
 
     ~~~~ {.haskell}
-    main = putStr (head getArgs)
+    main = IO.hPutStrLn IO.stdout (IO.hGetLine IO.stdin)
     ~~~~
 
-    * Oops, `head` expects type `[String]`, while `getArgs` is an `IO [String]`
+    * Oops, `hPutStrLn` expects type `String`, while `hGetLine` is an
+      `IO String`
 
 * How to de-construct an `IO [String]` to get a `[String]`
     * We can't use `case`, because we don't have a constructor for
       `IO`... Besides, the order and number of deconstructions of
-      something like `putStr` matters
+      something like `hPutStr` matters
     * That's the point of the `<-` operator in `do` blocks!
 
 
 # Another way to see IO [[Peyton Jones]][Awkward]
 
 ~~~ {.haskell}
-do page <- simpleHttp url
-   putStr (L.toString page)
+do name <- IO.hGetLine h
+   IO.hPutStrLn h $ "Hi, " ++ name
 ~~~
 
 ![](io1.svg)
 
-* `simpleHttp` and `putStr` return `IO` *actions* that can change the
+* `hGetLine` and `hPutStrLn` return `IO` *actions* that can change the
   world
     * Pure code can manipulate such actions, but can't actually
       execute them
@@ -1000,8 +1030,8 @@ do page <- simpleHttp url
 # Another way to see IO [[Peyton Jones]][Awkward]
 
 ~~~ {.haskell}
-do page <- simpleHttp url
-   putStr (L.toString page)
+do name <- IO.hGetLine h
+   IO.hPutStrLn h $ "Hi, " ++ name
 ~~~
 
 ![](io2.svg)
