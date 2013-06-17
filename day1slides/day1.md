@@ -1383,8 +1383,8 @@ show a = ???                  -- how to implement?
 * What looks like a function?
     * Has to bind a single symbol (`f`), rather than a pattern (`(x,
       y)`, `(Just x)`)
-    * Has to have at least one explicit argument (`f x =` ... ok, `f
-      =` ... not)
+    * Has to have at least one explicit argument (`f x =` ... ok,
+    `f =` ... not)
 * How are monomorphic types inferred?
     * If bound symbol used elsewhere in module, infer type from use
     * If still ambiguous and type is of class `Num`, try `Integer`
@@ -1475,7 +1475,7 @@ show a = ???                  -- how to implement?
     ~~~~
 
     ~~~~
-    GHCi, version 7.0.3: http://www.haskell.org/ghc/  :? for help
+    GHCi, version 7.6.3: http://www.haskell.org/ghc/  :? for help
     Prelude> fmap (+ 1) Nothing
     Nothing
     Prelude> fmap (+ 1) $ Just 2
@@ -1507,6 +1507,14 @@ show a = ???                  -- how to implement?
 
     * So we could have said:
 
+    ~~~~ {.haskell}
+    greet h = do
+      IO.hPutStrLn h "What is your name?"
+      fmap ("Hi, " ++) (IO.hGetLine h) >>= IO.hPutStrLn h
+    ~~~~
+
+
+<!--
         ~~~~ {.haskell}
 	simpleHttpStr url = fmap L.toString $ simpleHttp url
         ~~~~
@@ -1516,6 +1524,7 @@ show a = ???                  -- how to implement?
         ~~~~ {.haskell}
 	simpleHttpStr = fmap L.toString . simpleHttp
         ~~~~
+-->
 
 # Kinds
 
@@ -1551,7 +1560,7 @@ show a = ???                  -- how to implement?
 
 # The `Monad` class
 
-* **The entire first two lectures have been working up to this slide**
+* **This is the most important slide of the tutorial!**
 * `return` and `>>=` are actually methods of a class called `Monad`
 
 ~~~~ {.haskell}
@@ -1682,8 +1691,8 @@ data Point = Point { xCoord :: Double, yCoord :: Double }
     getX point = xCoord point
     ~~~~
 
-    * `xCoord` works anywhere you can use a function of type `Point ->
-      Double`
+    * `xCoord` works anywhere you can use a function of type
+      `Point -> Double`
     * One consequence: field labels share the same namespace as
       top-level bindings, and must be unique
 
@@ -1719,6 +1728,7 @@ data Point = Point { xCoord :: Double, yCoord :: Double }
       initialize all strict fields (since they cannot hold the
       `undefined` thunk).
 
+<!--
 * [`Data.Map`](http://hackage.haskell.org/packages/archive/containers/latest/doc/html/Data-Map.html) 
 maintains efficient, functional lookup tables
     * The tables cannot be mutated, but can be updated and used in
@@ -1726,6 +1736,194 @@ maintains efficient, functional lookup tables
 
 * [`words`](http://hackage.haskell.org/packages/archive/base/latest/doc/html/Data-List.html#v:words)
   breaks a `String` up into a list of whitespace-separated words
+-->
+
+# Networking
+
+* Haskell provides Stream (TCP and Unix-domain) socket support in [`Network`]
+
+    ~~~~ {.haskell}
+    connectTo :: HostName -> PortID -> IO Handle
+    listenOn :: PortID -> IO Socket
+    accept :: Socket -> (Handle, HostName, PortNumber)
+    sClose :: Socket -> IO ()
+    ~~~~
+
+* More low-level functions in [`Network.Socket`] (patterned after BSD
+  sockets)
+
+    ~~~~ {.haskell}
+    socket :: Family -> SocketType -> ProtocolNumber -> IO Socket
+    connect :: Socket -> SockAddr -> IO ()
+    bindSocket :: Socket -> SockAddr -> IO ()
+    listen :: Socket -> Int -> IO ()
+    accept :: Socket -> IO (Socket, SockAddr)  -- not same accept as above
+    ~~~~
+
+    * [`getAddrInfo`](http://hackage.haskell.org/packages/archive/network/latest/doc/html/Network-Socket.html#v:getAddrInfo)
+looks up hostnames just like [[RFC3493]][RFC3493] (returns 
+      `[`[`AddrInfo`](http://hackage.haskell.org/packages/archive/network/latest/doc/html/Network-Socket.html#t:AddrInfo)`]`)
+
+    * We'll stick to the higher-level functions today
+
+# Networking example
+
+* Instead of `withTty`, let's define `withClient` that uses TCP:
+
+    ~~~ {.haskell}
+    withClient :: PortID -> (IO.Handle -> IO a) -> IO a
+    withClient listenPort fn = do
+      s <- IO.listenOn listenPort
+      (h, host, port) <- IO.accept s
+      putStrLn $ "Connection from host " ++ host ++ " port " ++ show port
+      IO.sClose s  -- Only accept one client
+      a <- fn h
+      IO.hClose h
+      return a
+    ~~~
+
+* Try it like this:
+
+    ~~~
+    *Main> withClient (PortNumber 1617) (computerVsUser Rock)
+    ~~~
+
+    ~~~
+    $ nc localhost 1617
+    Please enter one of [Rock,Paper,Scissors]
+    Rock
+    You Tie
+    ~~~
+
+# Exceptions
+
+* A few functions "return" any type
+
+    ~~~~ {.haskell}
+    undefined :: a
+    error :: String -> a
+    ~~~~
+
+    * Return type can be arbitrary because function doesn't actually
+      return
+
+* These functions throw *language-level* exceptions
+
+    * To use exceptions directly, import [`Control.Exception`] as
+      follows:
+
+    ~~~~ {.haskell}
+    import Control.Exception
+    ~~~~
+
+    * [`Control.Exception`] gives you access to the following
+      symbols:
+
+    ~~~~ {.haskell}
+    class (Typeable e, Show e) => Exception e where ...
+    throw :: Exception e => e -> a
+    throwIO :: Exception e => e -> IO a
+    catch   :: Exception e => IO a -> (e -> IO a) -> IO a
+    ~~~~
+
+# Simple example
+
+
+~~~~ {.haskell}
+{-# LANGUAGE DeriveDataTypeable #-}
+
+import Control.Exception
+import Data.Typeable
+
+data MyError = MyError String deriving (Show, Typeable)
+instance Exception MyError
+
+catcher :: IO a -> IO (Maybe a)
+catcher action = fmap Just action `catch` handler
+    where handler (MyError msg) = do putStrLn msg; return Nothing
+~~~~
+
+~~~~
+*Main> catcher $ readFile "/dev/null"
+Just ""
+*Main> catcher $ throwIO $ MyError "something bad"
+something bad
+Nothing
+~~~~
+
+* Need `DeriveDataTypeable` language pragma (later lecture)
+* `handler`'s type cannot be inferred (use constructor or type
+  signature)
+    * Constructor pattern `e@(SomeException _)` catches all exceptions
+
+# Exceptions in pure code
+
+* Previous example wrapped `catcher` around an IO action
+* Can `throw` exceptions in pure code, yet `catch` them only in `IO`
+    * This is because evaluation order depends on implementation
+    * Which error is thrown by `(error "one") + (error "two")`?<br/>
+      Can be non-deterministic, which is [okay][imprecise exceptions]
+      if `catch` is restricted to the `IO` Monad
+* In `IO`, use `throwIO` (not `throw`) to make exception sequencing
+  precise
+
+    ~~~~ {.haskell}
+        do x <- throwIO (MyError "one")  -- this exception thrown
+           y <- throwIO (MyError "two")  -- this code not reached
+    ~~~~
+
+* Beware `catch` only catches exceptions if code actually evaluated
+
+
+    ~~~~ {.haskell}
+    pureCatcher :: a -> IO (Maybe a)
+    pureCatcher a = (a `seq` return (Just a))
+                    `catch` \(SomeException _) -> return Nothing
+    ~~~~
+
+    ~~~~
+    *Main> pureCatcher (undefined :: String)
+    Nothing
+    *Main> pureCatcher (undefined:undefined :: String)
+    Just "*** Exception: Prelude.undefined
+    ~~~~
+
+# A few more exception functions
+
+* `try` returns `Right a` normally, `Left e` if an exception occurred
+
+    ~~~~ {.haskell}
+    try :: Exception e => IO a -> IO (Either e a)
+    ~~~~
+
+* `finally` and `onException` run an clean-up action
+
+    ~~~~ {.haskell}
+    finally :: IO a -> IO b -> IO a      -- cleanup always
+    onException :: IO a -> IO b -> IO a  -- after exception
+    ~~~~
+
+    * Result of cleanup action (`b`) is discarded
+
+* `catchJust` catches only exceptions matching a predicate on value
+
+    ~~~~ {.haskell}
+    catchJust :: Exception e =>
+                 (e -> Maybe b) -> IO a -> (b -> IO a) -> IO a
+
+    readFileIfExists f = catchJust p (readFile f) (\_ -> return "")
+      where p e = if isDoesNotExistError e then Just e else Nothing
+    ~~~~
+
+    ~~~~
+    *Main> readFileIfExists "/nosuchfile"
+    ""
+    *Main> readFileIfExists "/etc/shadow"
+    *** Exception: /etc/shadow: openFile: permission denied ...
+    ~~~~
+
+
+# Threads
 
 
 
@@ -2058,7 +2256,6 @@ readFile file = UnsafeRIO $ do
 * Research in progress to build web framework using `LIO`
     * Allows users to upload untrusted applets into web server
 
-[SafeHaskell]: http://www.haskell.org/ghc/docs/latest/html/users_guide/safe-haskell.html
 
 
 
@@ -2078,3 +2275,18 @@ readFile file = UnsafeRIO $ do
 [DMRWiki]: http://www.haskell.org/haskellwiki/Monomorphism_restriction
 [Awkward]: http://research.microsoft.com/en-us/um/people/simonpj/papers/marktoberdorf/mark.pdf
 [default]: http://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-790004.3.4
+
+
+
+[SafeHaskell]: http://www.haskell.org/ghc/docs/latest/html/users_guide/safe-haskell.html
+
+[`Network`]: http://hackage.haskell.org/packages/archive/network/latest/doc/html/Network.html
+[imprecise exceptions]: http://research.microsoft.com/en-us/um/people/simonpj/papers/imprecise-exn.htm
+[`Control.Exception`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Exception.html
+[`Control.Concurrent`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Concurrent.html
+[`Control.Concurrent.Chan`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Concurrent-Chan.html
+[`Network.Socket`]: http://hackage.haskell.org/packages/archive/network/latest/doc/html/Network-Socket.html
+[`System.Timeout`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/System-Timeout.html
+[`MVar`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Concurrent-MVar.html
+[`bracket`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Exception.html#v:bracket
+[RFC3493]: http://tools.ietf.org/html/rfc3493
