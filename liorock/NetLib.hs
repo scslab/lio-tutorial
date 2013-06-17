@@ -46,3 +46,4 @@ acceptP p s = do
   hSetBufferingP p h IO.LineBuffering
   return (h, net)
 
+test = evalDC $ hGetLine (LObjTCB (True %% True) IO.stdin)

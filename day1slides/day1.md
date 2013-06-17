@@ -2644,31 +2644,60 @@ instance (Label l) => Monad (LIO l) where ...
 
 # Defining labeled objects
 
-~~~ {.haskell}
-{-# LANGUAGE Trustworthy #-}
+* Create `NetLib.hs`, play with variations on `test`:
 
-module NetLib where
-import Network (PortID(..), HostName, PortNumber)
-import qualified Network as IO
-import safe qualified System.IO as IO
+    ~~~ {.haskell}
+    {-# LANGUAGE Trustworthy #-}
 
-import safe LIO
-import safe LIO.DCLabel
-import LIO.TCB.LObj
+    module NetLib where
+    import Network (PortID(..), HostName, PortNumber)
+    import qualified Network as IO
+    import safe qualified System.IO as IO
 
-type Handle = LObj DCLabel IO.Handle
+    import safe LIO
+    import safe LIO.DCLabel
+    import LIO.TCB.LObj
 
-hPutStrLnP :: PrivDesc l p =>
-   Priv p -> LObj l IO.Handle -> String -> LIO l ()
-hPutStrLnP = blessPTCB IO.hPutStrLn
+    type Handle = LObj DCLabel IO.Handle
 
-hPutStrLn :: Label l => LObj l IO.Handle -> String -> LIO l ()
-hPutStrLn = blessTCB IO.hPutStrLn
+    hPutStrLnP :: PrivDesc l p =>
+       Priv p -> LObj l IO.Handle -> String -> LIO l ()
+    hPutStrLnP = blessPTCB IO.hPutStrLn
 
-hGetLine :: Label l => LObj l IO.Handle -> LIO l String
-hGetLine h = blessTCB IO.hGetLine h
-~~~
+    hPutStrLn :: Label l => LObj l IO.Handle -> String -> LIO l ()
+    hPutStrLn = blessTCB IO.hPutStrLn
 
+    hGetLine :: Label l => LObj l IO.Handle -> LIO l String
+    hGetLine h = blessTCB IO.hGetLine h
+
+    test = evalDC $ hGetLine (LObjTCB (True %% True) IO.stdin)
+    ~~~
+
+# Main exercise: LIO multi-player game
+
+* `NetLib.hs` -- `{-# LANGUAGE Trustworthy #-}`
+* `Common.hs` -- `{-# LANGUAGE Safe #-}` (`Move`, `outcome`, etc.)
+* `Play.hs` -- `{-# LANGUAGE Safe #-}`
+* `liorock.hs` (mainly IO code)
+
+* Goal: Make it impossible for third-party translations of game (that
+  substitute alternate `Play.hs`) to cheat
+
+* Label each socket with the host/port number, as follows
+
+    ~~~ {.haskell}
+    type Socket = LObj DCLabel IO.Socket
+
+    acceptP :: DCPriv -> Socket -> DC (Handle, Principal)
+    acceptP p s = do
+      (ioh, name, port) <- blessPTCB IO.accept p s
+      let net = principal $ "tcp://" ++ name ++ ":" ++ show port
+          label = dcLabel (privDesc p \/ net) (privDesc p \/ net)
+      guardAllocP p label
+      let h = LObjTCB label ioh
+      hSetBufferingP p h IO.LineBuffering
+      return (h, net)
+    ~~~ 
 
 
 [cabal-install]: http://hackage.haskell.org/package/cabal-install
