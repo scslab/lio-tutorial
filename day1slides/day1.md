@@ -2481,7 +2481,7 @@ readFile file = UnsafeRIO $ do
 * What happens if you mix $A$'s and $B$'s private data in a single document?
     * Both $A$ and $B$ should be concerned about the release of such a document
     * Need a label at least as restrictive as both $L_A$ and $L_B$
-    * Use the least upper bound (a.k.a. *join*) of $L_A$ and $L_B$,
+    * Use the least upper bound (a.k.a. *lub* or *join*) of $L_A$ and $L_B$,
       written $L_A\sqcap L_B$
 
 # **D**IFC is **D**ecentralized
@@ -2507,35 +2507,52 @@ readFile file = UnsafeRIO $ do
 * Users should also be able to *partially declassify* data
     * I.e., $L_{AB}\sqsubseteq_a\>L_B$ and $L_{AB}\sqsubseteq_b\>L_A$
 
-# `LIO` Monad [[Stefan]](http://www.cse.chalmers.se/~russo/publications_files/haskell11.pdf)
+# `LIO` Monad
+<!--
+[[Stefan]](http://www.cse.chalmers.se/~russo/publications_files/haskell11.pdf)
+-->
 
-* More flexibility if you enforce all permission checks dynamically
 * Let's define `Label`s as points on a lattice
-    * Can be arbitrary data type with $\sqsubseteq$, $\sqcap$, and $\sqcup$
+    (type with $\sqsubseteq$, $\sqcap$, and $\sqcup$)
 
     ~~~~ {.haskell}
-    class Eq a => POrd a where
-        leq :: a -> a -> Bool
-    class (POrd a, Show a, Read a) => Label a where
-        lub :: a -> a -> a
-        glb :: a -> a -> a
+    class (Eq l, Show l) => Label l where
+        lub :: l -> l -> l
+        glb :: l -> l -> l
+        canFlowTo :: l -> l -> Bool
     ~~~~
 
-    * Separately, define privileges as any type with $\sqsubseteq_p$
-      for a given label type
+* Define privileges as any type with $\sqsubseteq_p$ for a given label
+      type
 
     ~~~~ {.haskell}
-    -- PrivTCB is private class, not exposed to untrusted code
-    class (Label l, PrivTCB p) => Priv l p where
-        leqp :: p -> l -> l -> Bool
+    class Label l => PrivDesc l p where
+        canFlowToPrivDesc :: p -> l -> l -> Bool
+        partDowngradePrivDesc :: p -> l -> l -> l
+        -- use p to get as close to second l as possible from first
     ~~~~
 
-    * Note `PrivTCB` requirement in context--prevents untrusted code
-      from defining instances of `Priv` class.
-* These labels can easily represent many more lattice points
-    * E.g., labels can be sets of users whose private data may influence value
+    * But how to prevent malicious code from synthesizing privileges?
 
-# Need pure, side-effectful computations
+    * Really, `PrivDesc` instance _describes_ privileges, but doesn't
+      confer any
+
+    * Wrap them in type `Priv` and they give you power:
+
+    ~~~~ {.haskell}
+    newtype Priv a = PrivTCB a deriving (Show, Eq, Typeable)
+    ~~~~
+
+    * Use Safe Haskell to ensure only trusted code sees `PrivTCB` constructor
+
+# Using labels in Haskell
+
+~~~~ {.haskell}
+instance (Label l) => Monad (LIO l) where ...
+~~~~
+
+* Introduce new _labeled IO_ monad `LIO`.  Like `RIO`, except:
+    * Also keeps track of thread's _current label_ and _current clearance_
 
 * Represent labeled pure values with type wrapper
 
@@ -2543,41 +2560,36 @@ readFile file = UnsafeRIO $ do
     data Labeled l t = LabeledTCB l t
     ~~~~
 
-    * Pure values suitable for mashalling, insertion in database
-
-* The `LIO l` monad (for `Label l`) is a state monad w. *current* label
-    * Current label rises to LUB of all data observed
-* Can label and unlabel pure values in `LIO` monad:
+* Can label and unlabel values within `LIO` monad:
 
     ~~~~ {.haskell}
     label :: Label l => l -> a -> LIO l (Labeled l a)
     unlabel :: (Label l) => Labeled l a -> LIO l a
     unlabelP :: Priv l p => p -> Labeled l a -> LIO l a
-    toLabeled :: (Label l) => l -> LIO l a -> LIO l (Labeled l a)
     ~~~~
 
-    * `label` requires value label to be above current label
-    * `unlabel` raises current label to LUB with removed `Labeled`
-      (`unlabelP` uses privileges to raise label less)
-    * `toLabeled` takes computation that would have raised current
-      label, and instead of raising label, wraps result in `Labeled`
+    * `label` requires value label to be between current label & clearance
+    * `unlabel` raises current label to:  old current label $\sqcap$ value label
+    * `unlabelP` uses privileges to raise label less
 
 # Other `LIO` features
 
 * Clearance
-    * Special label maintained w. current label in `LIO` state
     * Represents upper bound on current label
     * Can lower clearance to label, but raising requires privileges
     * Allows "need-to-know" policies, reducing danger of covert channels
-* Labeled file system
-    * Stores labels along with files
-* Labeled exceptions
-    * Can only catch exceptions thrown at points below your clearance
-    * Get tainted by exception when you catch it
-* Research in progress to build web framework using `LIO`
-    * Allows users to upload untrusted applets into web server
 
+* Haskell's abstraction mechanisms work well for guarding privileges
+    * E.g., curry privileges into first argument of function
 
+* Gates -- Functions to which caller can prove posession of privilege
+
+* Labeled mutable variables (`LIORef`s)
+
+* Threads
+    * Can use threads to compute things at different labels  
+      (e.g., interact with multiple web sites before combining the data)
+    * Labeled `MVar`s (`LMVars`)
 
 
 
