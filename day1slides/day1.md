@@ -555,26 +555,56 @@ Nothing
 
 # Possible solutions
 
-~~~ {.haskell}
-parseMove :: String -> Maybe Move
-parseMove "Rock"     = Just Rock
-parseMove "Paper"    = Just Paper
-parseMove "Scissors" = Just Scissors
-parseMove _          = Nothing
-~~~
+* Use `reads`:
 
-* Note how strings are constructors---you can pattern match on them
+    ~~~ {.haskell}
+    parseMove :: String -> Maybe Move
+    parseMove str = case reads str of [(m, "")] -> Just m
+                                      _         -> Nothing
+    ~~~
 
-~~~ {.haskell}
-parseMove :: String -> Maybe Move
-parseMove str = case reads str of [(m, "")] -> Just m
-                                  _         -> Nothing
-~~~
+    * `reads` return type implicitly constrained by `parseMove`'s type
+      declaration
 
-* Here return type of `reads` implicitly constrained by 
-  `parseMove`'s type declaration
     * Removing `parseMove`'s type would make calling it difficult
 
+* Directly match keywords:
+
+    ~~~ {.haskell}
+    parseMove :: String -> Maybe Move
+    parseMove "Rock"     = Just Rock
+    parseMove "Paper"    = Just Paper
+    parseMove "Scissors" = Just Scissors
+    parseMove _          = Nothing
+    ~~~
+
+    * Note how strings are constructors---you can pattern match on
+      them
+
+    * But this solution too finicky--won't except trailing carriage
+      returns or spaces.  If you did this change to using reads.
+
+# Being more permissive of line disciplines
+
+* Let's tolerate trailing whitespace
+    * Change your definition to:
+
+    ~~~~ {.haskell}
+    parseMove :: String -> Maybe Move
+    parseMove str = case reads str of
+      [(m, rest)] | ok rest -> Just m
+      _                     -> Nothing
+      where ok = all (`elem` " \r\n")
+    ~~~~
+
+    * Should now behave like this
+
+    ~~~~
+    *Main> parseMove "Rock  \r\n"
+    Just Rock
+    *Main> parseMove "Rock  \r\njunk"
+    Nothing
+    ~~~~
 
 # Hoogle
 
@@ -703,12 +733,6 @@ parseMove str = case reads str of [(m, "")] -> Just m
 
     ~~~ {.haskell}
     oo :: (c -> d) -> (a -> b -> c) -> a -> b -> d
-    (f `oo` g) a b = f (g a b)
-    ~~~
-
-    or equivalently:
-
-    ~~~ {.haskell}
     oo f g a b = f (g a b)
     ~~~
 
@@ -738,9 +762,9 @@ oo = (.) (.) (.) -- equivalent
 
 * Can get there step-by-step using the following tricks:
     * Whenever definition ends in function application, can use "`.`":  
-      `oo` _xxx_ `t =` _yyy_ `(h t)` &#x27f6; `oo` _xxx_ `=` _yyy_ `. h`
+      `oo` _xxx_ `t =` _yyy_ `(h t)` \ \ \ &#x27f6; \ \ \ `oo` _xxx_ `=` _yyy_ `. h`
     * Whenever function and definition end with same argument, chop:  
-      `oo` _xxx_ `t =` _yyy_ `t` &#x27f6; `oo` _xxx_ `=` _yyy_
+      `oo` _xxx_ `t =` _yyy_ `t` \ \ \ &#x27f6; \ \ \ `oo` _xxx_ `=` _yyy_
     * Rewrite infix "`.`" to prefix "`(.)`"
 
 ~~~ {.haskell}
@@ -912,10 +936,9 @@ factorial n0 = loop 1 n0
 
     ~~~~ {.haskell}
     module Main where      -- redundant since Main is the default
-    import Network (PortID(..))
-    import qualified Network as IO
-    import System.IO (BufferMode(..), IOMode(..))
-    import qualified System.IO as IO
+    import Control.Concurrent
+    import Network
+    import System.IO
     ~~~~
 
     * Start module with "`module` *name* `where`" or "`module` *name*
@@ -926,6 +949,8 @@ factorial n0 = loop 1 n0
       with *ID*`.`
     * `import` *module* `(`*function1*[`,` *function2* ...]`)` -
       imports just the named functions
+    * `import` *module* `hiding (`*function1*[`,` *function2* ...]`)` -
+      imports all but the named functions
 
 # `do` notation
 
@@ -935,11 +960,11 @@ factorial n0 = loop 1 n0
 
 ~~~ {.haskell}
 greet h = do
-  IO.hPutStrLn h "What is your name?"
-  name <- IO.hGetLine h
-  IO.hPutStrLn h $ "Hi, " ++ name
+  hPutStrLn h "What is your name?"
+  name <- hGetLine h
+  hPutStrLn h $ "Hi, " ++ name
 
-withTty = IO.withFile "/dev/tty" ReadWriteMode
+withTty = withFile "/dev/tty" ReadWriteMode
 
 main = withTty greet
 ~~~
@@ -967,9 +992,9 @@ $ runghc ./greet.hs
 
 ~~~ {.haskell}
 greet h = do
-  IO.hPutStrLn h "What is your name?"
-  name <- IO.hGetLine h
-  IO.hPutStrLn h $ "Hi, " ++ name
+  hPutStrLn h "What is your name?"
+  name <- hGetLine h
+  hPutStrLn h $ "Hi, " ++ name
 ~~~
 
 * Greeting task requires some impure (non-functional) actions
@@ -991,9 +1016,9 @@ greet h = do
 
 ~~~~ {.haskell}
 main :: IO ()
-greet :: IO.Handle -> IO ()
-IO.hPutStrLn :: IO.Handle -> String -> IO ()
-IO.hGetLine :: IO.Handle -> IO String
+greet :: Handle -> IO ()
+hPutStrLn :: Handle -> String -> IO ()
+hGetLine :: Handle -> IO String
 ~~~~
 
 * `IO` is a parameterized type (just as `Maybe` is parameterized)
@@ -1001,14 +1026,14 @@ IO.hGetLine :: IO.Handle -> IO String
       `String` if executed
     * Unlike `Maybe`, we won't use a constructor for `IO`, which is
       somewhat magic
-* What if we try to copy a line of input as follows
+* What if we try to copy a line of input as follows?
 
     ~~~~ {.haskell}
-    main = IO.hPutStrLn IO.stdout (IO.hGetLine IO.stdin)
+    main = hPutStrLn stdout (hGetLine stdin)
     ~~~~
 
-    * Oops, `hPutStrLn` expects type `String`, while `hGetLine` is an
-      `IO String`
+    * Oops, `hPutStrLn` expects type `String`, while `hGetLine`
+      returns an `IO String`
 
 * How to de-construct an `IO [String]` to get a `[String]`
     * We can't use `case`, because we don't have a constructor for
@@ -1020,8 +1045,8 @@ IO.hGetLine :: IO.Handle -> IO String
 # Another way to see IO [[Peyton Jones]][Awkward]
 
 ~~~ {.haskell}
-do name <- IO.hGetLine h
-   IO.hPutStrLn h $ "Hi, " ++ name
+do name <- hGetLine h
+   hPutStrLn h $ "Hi, " ++ name
 ~~~
 
 ![](io1.svg)
@@ -1036,8 +1061,8 @@ do name <- IO.hGetLine h
 # Another way to see IO [[Peyton Jones]][Awkward]
 
 ~~~ {.haskell}
-do name <- IO.hGetLine h
-   IO.hPutStrLn h $ "Hi, " ++ name
+do name <- hGetLine h
+   hPutStrLn h $ "Hi, " ++ name
 ~~~
 
 ![](io2.svg)
@@ -1088,8 +1113,8 @@ Ok, modules loaded: Main.
 
         ~~~ {.haskell}
         do ...
-           IO.hPutStrLn h $ "Hi, " ++ name
-           name                             -- Incorrect, will not compile
+           hPutStrLn h $ "Hi, " ++ name
+           name                         -- Incorrect, will not compile
         ~~~
 
     * Problem: every action in an `IO` do block must have type `IO a`
@@ -1099,11 +1124,11 @@ Ok, modules loaded: Main.
       a particular value
 
     ~~~ {.haskell}
-    greet :: IO.Handle -> IO String
+    greet :: Handle -> IO String
     greet h = do
-      IO.hPutStrLn h "What is your name?"
-      name <- IO.hGetLine h
-      IO.hPutStrLn h $ "Hi, " ++ name
+      hPutStrLn h "What is your name?"
+      name <- hGetLine h
+      hPutStrLn h $ "Hi, " ++ name
       return name
     ~~~
 
@@ -1133,8 +1158,8 @@ Ok, modules loaded: Main.
 
     ~~~~ {.haskell}
     greet h = do
-      IO.hPutStrLn h "What is your name?"
-      IO.hGetLine h >>= IO.hPutStrLn h . ("Hi, " ++)
+      hPutStrLn h "What is your name?"
+      hGetLine h >>= hPutStrLn h . ("Hi, " ++)
     ~~~~
 
     * Note `>>=` composes left-to-right, while `.` goes right-to-left
@@ -1143,9 +1168,9 @@ Ok, modules loaded: Main.
   for calling `>>=`.  Desugaring original `greet`:
 
     ~~~~ {.haskell}
-    greet h = IO.hPutStrLn h "What is your name?" >>= \_ ->
-              IO.hGetLine h >>= \name ->
-              IO.hPutStrLn h . ("Hi, " ++)
+    greet h = hPutStrLn h "What is your name?" >>= \_ ->
+              hGetLine h >>= \name ->
+              hPutStrLn h . ("Hi, " ++)
     ~~~~
 
 <!--
@@ -1195,7 +1220,7 @@ Ok, modules loaded: Main.
     * Tell user whether s/he won/lost/tied
 
     ~~~~ {.haskell}
-    computerVsUser :: Move -> IO.Handle -> IO ()
+    computerVsUser :: Move -> Handle -> IO ()
     ~~~~
 
 * Example:
@@ -1216,18 +1241,18 @@ Ok, modules loaded: Main.
 # A possible solution
 
 ~~~ {.haskell}
-getMove :: IO.Handle -> IO Move
+getMove :: Handle -> IO Move
 getMove h = do
-  IO.hPutStrLn h $ "Please enter one of " ++ show ([minBound..] :: [Move])
-  input <- IO.hGetLine h
+  hPutStrLn h $ "Please enter one of " ++ show ([minBound..] :: [Move])
+  input <- hGetLine h
   case parseMove input of Just move -> return move
                           Nothing -> getMove h
 
-computerVsUser :: Move -> IO.Handle -> IO ()
+computerVsUser :: Move -> Handle -> IO ()
 computerVsUser computerMove h = do
   userMove <- getMove h
   let o = outcome userMove computerMove
-  IO.hPutStrLn h $ "You " ++ show o
+  hPutStrLn h $ "You " ++ show o
 ~~~
 
 # More on polymorphism
@@ -1509,8 +1534,8 @@ show a = ???                  -- how to implement?
 
     ~~~~ {.haskell}
     greet h = do
-      IO.hPutStrLn h "What is your name?"
-      fmap ("Hi, " ++) (IO.hGetLine h) >>= IO.hPutStrLn h
+      hPutStrLn h "What is your name?"
+      fmap ("Hi, " ++) (hGetLine h) >>= hPutStrLn h
     ~~~~
 
 
@@ -1560,7 +1585,7 @@ show a = ???                  -- how to implement?
 
 # The `Monad` class
 
-* **This is the most important slide of the tutorial!**
+* **This is the most important slide so far!**
 * `return` and `>>=` are actually methods of a class called `Monad`
 
 ~~~~ {.haskell}
@@ -1740,7 +1765,7 @@ maintains efficient, functional lookup tables
 
 # Networking
 
-* Haskell provides Stream (TCP and Unix-domain) socket support in [`Network`]
+* High-level Stream (TCP & Unix-domain) socket support in [`Network`]
 
     ~~~~ {.haskell}
     connectTo :: HostName -> PortID -> IO Handle
@@ -1749,8 +1774,7 @@ maintains efficient, functional lookup tables
     sClose :: Socket -> IO ()
     ~~~~
 
-* More low-level functions in [`Network.Socket`] (patterned after BSD
-  sockets)
+* Low-level BSD socket functions in [`Network.Socket`]
 
     ~~~~ {.haskell}
     socket :: Family -> SocketType -> ProtocolNumber -> IO Socket
@@ -1771,14 +1795,14 @@ looks up hostnames just like [[RFC3493]][RFC3493] (returns
 * Instead of `withTty`, let's define `withClient` that uses TCP:
 
     ~~~ {.haskell}
-    withClient :: PortID -> (IO.Handle -> IO a) -> IO a
+    withClient :: PortID -> (Handle -> IO a) -> IO a
     withClient listenPort fn = do
-      s <- IO.listenOn listenPort
-      (h, host, port) <- IO.accept s
+      s <- listenOn listenPort
+      (h, host, port) <- accept s
       putStrLn $ "Connection from host " ++ host ++ " port " ++ show port
-      IO.sClose s  -- Only accept one client
+      sClose s  -- Only accept one client
       a <- fn h
-      IO.hClose h
+      hClose h
       return a
     ~~~
 
@@ -1896,11 +1920,12 @@ Nothing
     try :: Exception e => IO a -> IO (Either e a)
     ~~~~
 
-* `finally` and `onException` run an clean-up action
+* `finally` and `onException` run a clean-up action
 
     ~~~~ {.haskell}
     finally :: IO a -> IO b -> IO a      -- cleanup always
     onException :: IO a -> IO b -> IO a  -- after exception
+    flip :: (a -> b -> c) -> b -> a -> c -- flips order of args
     ~~~~
 
     * Result of cleanup action (`b`) is discarded
@@ -1916,7 +1941,8 @@ Nothing
 
     ~~~~ {.haskell}
     sayhi :: IO ()
-    sayhi = bracket (connectTo "localhost" $ PortNumber 1234) hClose $ \h -> do
+    sayhi = bracket (connectTo "localhost" $ PortNumber 1234)
+                    hClose $ \h -> do
       hPutStrLn h "hello"
     ~~~~
 
@@ -1988,12 +2014,14 @@ Nothing
 # Solution
 
 ~~~~ {.haskell}
-withClients :: PortID -> (IO.Handle -> IO ()) -> IO ()
-withClients listenPort fn = bracket (IO.listenOn listenPort) sClose $ \s ->
+withClients :: PortID -> (Handle -> IO ()) -> IO ()
+withClients listenPort fn =
+  bracket (listenOn listenPort) sClose $ \s ->
   let loop = do
-        (h, host, port) <- IO.accept s
-        putStrLn $ "Connection from host " ++ host ++ " port " ++ show port
-        forkIO $ fn h `finally` IO.hClose h
+        (h, host, port) <- accept s
+        putStrLn $ "Connection from host " ++ host ++
+                   " port " ++ show port
+        forkIO $ fn h `finally` hClose h
         loop
   in loop
 ~~~~
@@ -2124,7 +2152,59 @@ cond_broadcast (Cond _ waiters) = modifyMVar_ waiters wakeall
 
 * Allow multiple players to connect to server
     * Pair each two consecutive connections in a Rock, Paper, Scissors game  
-      (Won't use `computerVsUser` any more)
+      (Don't use `computerVsUser` any more)
+* New function:  `twoPlayerRock :: PortID -> IO ()`
+
+~~~~
+*Main> twoPlayerRock (PortNumber 1617)
+~~~~
+
+~~~~
+$ nc localhost 1617
+Waiting for your opponent to connect...
+Playing against localhost.localdomain:46271
+Please enter one of [Rock,Paper,Scissors]
+Scissors
+You Lose
+~~~~
+
+~~~~
+$ nc localhost 1617
+Playing against localhost.localdomain:46270
+Please enter one of [Rock,Paper,Scissors]
+Rock
+You Win
+~~~~
+
+# Solution
+
+~~~~ {.haskell}
+play :: Handle -> MVar Move -> String -> MVar Move -> IO ()
+play h self otherName other = do
+  myMove <- flip onException (putMVar self $ error "dead") $ do
+    hPutStrLn h $ "Playing against " ++ otherName
+    getMove h
+  putMVar self myMove
+  otherMove <- readMVar other
+  hPutStrLn h $ "You " ++ show (outcome myMove otherMove)
+
+twoPlayerRock :: PortID -> IO ()
+twoPlayerRock listenPort =
+  bracket (IO.listenOn listenPort) sClose $ \s ->
+  let loop = do
+        (h1, host1, port1) <- IO.accept s
+        hPutStrLn h1 "Waiting for your opponent to connect..."
+            `catch` \(SomeException _) -> return ()
+        let name1 = host1 ++ ":" ++ show port1
+        (h2, host2, port2) <- IO.accept s
+        let name2 = host2 ++ ":" ++ show port2
+        mv1 <- newEmptyMVar
+        mv2 <- newEmptyMVar
+        forkIO $ play h1 mv1 name2 mv2 `finally` hClose h1
+        forkIO $ play h2 mv2 name1 mv1 `finally` hClose h2
+        loop
+  in loop
+~~~~
 
 <!--
 # Channels
