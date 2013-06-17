@@ -910,7 +910,7 @@ factorial n0 = loop 1 n0
 
 
     ~~~
-    cabal install lio
+    cabal install --hyperlink-source lio
     ~~~
 
     * Installs packages in `$HOME/.cabal`, and records them in
@@ -1170,7 +1170,7 @@ Ok, modules loaded: Main.
     ~~~~ {.haskell}
     greet h = hPutStrLn h "What is your name?" >>= \_ ->
               hGetLine h >>= \name ->
-              hPutStrLn h . ("Hi, " ++)
+              hPutStrLn h ("Hi, " ++ name)
     ~~~~
 
 <!--
