@@ -931,6 +931,8 @@ factorial n0 = loop 1 n0
 
 * Let's write a function to greet someone
 
+* Type the following into a file `greet.hs`:
+
 ~~~ {.haskell}
 greet h = do
   IO.hPutStrLn h "What is your name?"
@@ -942,6 +944,9 @@ withTty = IO.withFile "/dev/tty" ReadWriteMode
 main = withTty greet
 ~~~
 
+* Now try running `main` in GHCI
+
+<!--
 * Can the code like this in GHCI
 
 ~~~
@@ -956,6 +961,7 @@ Hi, David
 ~~~
 $ runghc ./greet.hs
 ~~~
+-->
 
 # `do` notation
 
@@ -1043,56 +1049,63 @@ do name <- IO.hGetLine h
     * What action to execute next can depend on the value of the
       extracted `a`
 
-# Running `urldump`
+# Running `greet`
 
 ~~~~
-$ ghc --make urldump
-[1 of 1] Compiling Main             ( urldump.hs, urldump.o )
-Linking urldump ...
-$ ./urldump http://www.scs.stanford.edu/
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-...
+$ ghc --make greet
+[1 of 1] Compiling Main             ( greet.hs, greet.o )
+Linking greet ...
+$ ./greet
+What is your name?
+David
+Hi, David
 ~~~~
 
 * What if you want to run it in GHCI?
 
     ~~~~
-$ ghci ./urldump.hs
+$ ghci ./greet.hs
+...
 Prelude Main>
     ~~~~
 
     * No `*` before `Main` means no access to internal symbols (because
-      compiled)
+      compiled), need to say:
 
     ~~~~
-Prelude Main> :load *urldump.hs
-[1 of 1] Compiling Main             ( urldump.hs, interpreted )
+Prelude Main> :load *greet.hs
+[1 of 1] Compiling Main             ( greet.hs, interpreted )
 Ok, modules loaded: Main.
-*Main> withArgs ["http://cs240h.scs.stanford.edu/"] main
-    ~~~~
-
-    * Alternate GHCI shortcut:
-
-    ~~~~
-Prelude Main> :main "http://cs240h.scs.stanford.edu/"
+*Main> 
     ~~~~
 
 # The `return` function
 
-<!-- might need to check out
-https://blueprints.launchpad.net/inkscape/+spec/allow-browser-resizing
--->
+* What if we want `greet` to return the name of the person?
+    * Last action is `hPutStrLn :: IO ()`; want to end with
+      action returning `name`
+    * This does not work:
 
-* Let's combine `simpleHttp` and `L.toString` into one function
+        ~~~ {.haskell}
+        do ...
+           IO.hPutStrLn h $ "Hi, " ++ name
+           name                             -- Incorrect, will not compile
+        ~~~
 
-    ![](simpleHttpStr.svg)
+    * Problem: every action in an `IO` do block must have type `IO a`
+      for some `a`
 
-    ~~~~ {.haskell}
-    simpleHttpStr :: String -> IO String
-    simpleHttpStr url = do
-      page <- simpleHttp url
-      return (L.toString page)  -- result of do block is last action
-    ~~~~
+    * Solution: `return` function creates a trivial `IO` action that returns
+      a particular value
+
+    ~~~ {.haskell}
+    greet :: IO.Handle -> IO String
+    greet h = do
+      IO.hPutStrLn h "What is your name?"
+      name <- IO.hGetLine h
+      IO.hPutStrLn h $ "Hi, " ++ name
+      return name
+    ~~~
 
 * Note:  **`return` is not control flow statement**, just a function
 
@@ -1100,12 +1113,10 @@ https://blueprints.launchpad.net/inkscape/+spec/allow-browser-resizing
     return :: a -> IO a
     ~~~~
 
-    * Every action in an `IO` do block must have type `IO a` for some
-      `a`
-    * `L.toString` returns a `String`, use `return` to make an `IO
-      String`
+<!--
     * In a `do` block, "`let x = e`" is like "`x <- return e`" (except
       recursive)
+-->
 
 
 # Point-free IO composition
@@ -1118,16 +1129,26 @@ https://blueprints.launchpad.net/inkscape/+spec/allow-browser-resizing
     infixl 1 >>=
     ~~~~
 
-* Let's re-write `urldump` in point-free style
+* Let's re-write `greet` with point-free style to avoid variable `name`
 
     ~~~~ {.haskell}
-    main = getArgs >>= simpleHttpStr . head >>= putStr
+    greet h = do
+      IO.hPutStrLn h "What is your name?"
+      IO.hGetLine h >>= IO.hPutStrLn h . ("Hi, " ++)
     ~~~~
 
     * Note `>>=` composes left-to-right, while `.` goes right-to-left
 * `do` blocks are just
   [syntactic sugar](http://www.haskell.org/onlinereport/haskell2010/haskellch3.html#x8-470003.14)
-  for calling `>>=`
+  for calling `>>=`.  Desugaring original `greet`:
+
+    ~~~~ {.haskell}
+    greet h = IO.hPutStrLn h "What is your name?" >>= \_ ->
+              IO.hGetLine h >>= \name ->
+              IO.hPutStrLn h . ("Hi, " ++)
+    ~~~~
+
+<!--
     * Let's de-sugar our original `main`:
 
     ~~~~ {.haskell}
@@ -1136,7 +1157,9 @@ https://blueprints.launchpad.net/inkscape/+spec/allow-browser-resizing
         simpleHttp url >>= \page ->
         putStr (L.toString page)
     ~~~~
+-->
 
+<!--
 # Lazy IO
 
 * Some simple file IO functions may be handy for first lab
@@ -1162,7 +1185,7 @@ https://blueprints.launchpad.net/inkscape/+spec/allow-browser-resizing
       [[Peyton Jones]][Awkward])
     * Lazy IO is great for scripts, bad for servers; more in Iteratee
       lecture
-
+-->
 
 # More on polymorphism
 
