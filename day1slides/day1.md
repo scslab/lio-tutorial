@@ -2120,6 +2120,13 @@ cond_broadcast (Cond _ waiters) = modifyMVar_ waiters wakeall
 
 * Key idea: putting `MVar`s inside `MVar`s is very powerful
 
+# Exercise: Multi-player Rock, Paper, Scissors
+
+* Allow multiple players to connect to server
+    * Pair each pair of players up in a Rock, Paper, Scissors game  
+      (Won't use `computerVsUser` any more)
+
+<!--
 # Channels
 
 * [`Control.Concurrent.Chan`] provides unbounded *channels*
@@ -2158,7 +2165,7 @@ readChan (Chan r _) =
       (Item a newFull) <- takeMVar full
       return (newFull, a)
 ~~~~
-
+-->
 
 
 # Untrusted code
