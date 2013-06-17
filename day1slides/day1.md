@@ -1982,6 +1982,9 @@ Nothing
     You Tie
     ~~~~
 
+    * Note, this isn't a very interesting game yet, since the computer
+      always plays the same move.
+
 # Solution
 
 ~~~~ {.haskell}
@@ -2023,6 +2026,25 @@ withClients listenPort fn = bracket (IO.listenOn listenPort) sClose $ \s ->
     tryTakeMVar :: MVar a -> IO (Maybe a) -- Nothing if empty
     tryPutMVar :: MVar a -> a -> IO Bool  -- False if full
     ~~~~
+
+# MVar helper functions
+
+* Many helper functions implemented in terms of `takeMVar`/`putMVar`
+
+    * For modifying `MVar`s:
+
+    ~~~ {.haskell}
+    withMVar :: MVar a -> (a -> IO b) -> IO b
+    modifyMVar_ :: MVar a -> (a -> IO a) -> IO ()
+    modifyMVar :: MVar a -> (a -> IO (a, b)) -> IO b
+    ~~~ 
+
+* Other useful functions, but note they are not atomic!
+
+    ~~~ {.haskell}
+    readMVar :: MVar a -> IO a
+    swapMVar :: MVar a -> a -> IO a
+    ~~~
 
 # Working with `MVar`s
 
@@ -2070,9 +2092,6 @@ withClients listenPort fn = bracket (IO.listenOn listenPort) sClose $ \s ->
     * Store `ThreadId` of lock owner in `MVar`
 
 * How would you implement a condition variable?
-    * Many uses of condition variables don't work with async
-      exceptions
-    * So let's not worrying about `mask` for this question...
 
 # Condition variables
 
@@ -2088,7 +2107,7 @@ cond_wait, cond_signal, cond_broadcast :: Cond -> IO ()
 cond_wait (Cond m waiters) = do
   me <- newEmptyMVar
   modifyMVar_ waiters $ \others -> return $ others ++ [me]
-  mutex_unlock m   -- note we don't care if preempted here after this
+  mutex_unlock m
   takeMVar me `finally` mutex_lock m
   
 cond_signal (Cond _ waiters) = modifyMVar_ waiters wakeone
