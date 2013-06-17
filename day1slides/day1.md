@@ -2642,6 +2642,32 @@ instance (Label l) => Monad (LIO l) where ...
       C_\mathrm{def}$--i.e., others can taint themselves to read data,
       but not export it
 
+# Defining labeled objects
+
+~~~ {.haskell}
+{-# LANGUAGE Trustworthy #-}
+
+module NetLib where
+import Network (PortID(..), HostName, PortNumber)
+import qualified Network as IO
+import safe qualified System.IO as IO
+
+import safe LIO
+import safe LIO.DCLabel
+import LIO.TCB.LObj
+
+type Handle = LObj DCLabel IO.Handle
+
+hPutStrLnP :: PrivDesc l p =>
+   Priv p -> LObj l IO.Handle -> String -> LIO l ()
+hPutStrLnP = blessPTCB IO.hPutStrLn
+
+hPutStrLn :: Label l => LObj l IO.Handle -> String -> LIO l ()
+hPutStrLn = blessTCB IO.hPutStrLn
+
+hGetLine :: Label l => LObj l IO.Handle -> LIO l String
+hGetLine h = blessTCB IO.hGetLine h
+~~~
 
 
 
