@@ -1187,6 +1187,49 @@ Ok, modules loaded: Main.
       lecture
 -->
 
+# Exercise: Rock, Paper, Scissors against the computer
+
+* Write a function to play a particular move against a user
+    * First argument is computer's move
+    * Read user's move from `Handle`
+    * Tell user whether s/he won/lost/tied
+
+    ~~~~ {.haskell}
+    computerVsUser :: Move -> IO.Handle -> IO ()
+    ~~~~
+
+* Example:
+
+    ~~~~
+    *Main> withTty $ computerVsUser Rock
+    Please enter one of [Rock,Paper,Scissors]
+    garbage
+    Please enter one of [Rock,Paper,Scissors]
+    Paper
+    You Win
+    *Main> withTty $ computerVsUser Scissors
+    Please enter one of [Rock,Paper,Scissors]
+    Paper
+    You Lose
+    ~~~~
+
+# A possible solution
+
+~~~ {.haskell}
+getMove :: IO.Handle -> IO Move
+getMove h = do
+  IO.hPutStrLn h $ "Please enter one of " ++ show ([minBound..] :: [Move])
+  input <- IO.hGetLine h
+  case parseMove input of Just move -> return move
+                          Nothing -> getMove h
+
+computerVsUser :: Move -> IO.Handle -> IO ()
+computerVsUser computerMove h = do
+  userMove <- getMove h
+  let o = outcome userMove computerMove
+  IO.hPutStrLn h $ "You " ++ show o
+~~~
+
 # More on polymorphism
 
 * We've seen a bunch of polymorphic functions
