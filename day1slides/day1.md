@@ -2319,7 +2319,7 @@ readChan (Chan r _) =
 * Suppose you want to translate to a real language
     * Generally requires massive data sets
     * Untrusted code would at minimum need to do file IO
-    * Or maybe easiest send text over network to, e.g., Google translate
+    * Or maybe easiest to send text over network to, e.g., Google translate
 * Idea: use a *restricted* IO monad, `RIO`
     * Untrusted third party implements `googleTranslate` function
 
@@ -2339,7 +2339,10 @@ readChan (Chan r _) =
 module RIO (RIO(), runRIO, RIO.readFile) where
 
 -- Notice that symbol UnsafeRIO is not exported from this module!
-newtype RIO a = UnsafeRIO { runRIO :: IO a }
+newtype RIO a = UnsafeRIO (IO a)
+runRIO :: RIO a -> IO a
+runRIO (UnsafeRIO io) = io
+
 instance Monad RIO where
     return = UnsafeRIO . return
     m >>= k = UnsafeRIO $ runRIO m >>= runRIO . k
@@ -2355,7 +2358,6 @@ readFile file = UnsafeRIO $ do
 ~~~~
 
 * Note use of `newtype` -- `RIO` is same as `IO` at runtime
-    * Anyone can turn an `RIO` action into an `IO` one with `runRIO`
     * But cannot create `RIO` action from `IO` one without `UnsafeRIO`
       symbol...  not exported, so untrusted code cannot bury `IO`
       actions in `RIO` ones

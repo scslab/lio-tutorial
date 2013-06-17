@@ -10,13 +10,13 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="273.11542"
-   height="90.209564"
+   width="400.11996"
+   height="122.8746"
    preserveAspectRatio="xMinYMin meet"
-   viewBox="0 0 273.02142 90.19811"
+   viewBox="0 0 399.98226 122.859"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.2 r9819"
+   inkscape:version="0.48.4 r9939"
    sodipodi:docname="lwrite.svg">
   <sodipodi:namedview
      id="base"
@@ -25,16 +25,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="103.85876"
-     inkscape:cy="6.3055668"
+     inkscape:zoom="1"
+     inkscape:cx="217.86373"
+     inkscape:cy="-14.677068"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
-     showgrid="true"
-     inkscape:window-width="1344"
-     inkscape:window-height="960"
-     inkscape:window-x="67"
-     inkscape:window-y="52"
+     showgrid="false"
+     inkscape:window-width="1120"
+     inkscape:window-height="720"
+     inkscape:window-x="270"
+     inkscape:window-y="148"
      inkscape:window-maximized="0"
      showguides="false"
      inkscape:guide-bbox="true"
@@ -47,27 +47,27 @@
      fit-margin-left="0"
      fit-margin-right="0">
     <sodipodi:guide
-       position="-71.086133,-620.30011"
+       position="-71.081163,-620.28274"
        orientation="0,1052.3622"
        id="guide3064" />
     <sodipodi:guide
-       position="981.27607,-620.30011"
+       position="981.28104,-620.28274"
        orientation="-744.09448,0"
        id="guide3066" />
     <sodipodi:guide
-       position="-71.086133,-620.30011"
+       position="-71.081163,-620.28274"
        orientation="0,1052.3622"
        id="guide3072" />
     <sodipodi:guide
-       position="981.27607,-620.30011"
+       position="981.28104,-620.28274"
        orientation="-744.09448,0"
        id="guide3074" />
     <sodipodi:guide
-       position="-71.086133,-620.30011"
+       position="-71.081163,-620.28274"
        orientation="0,1052.3622"
        id="guide3080" />
     <sodipodi:guide
-       position="981.27607,-620.30011"
+       position="981.28104,-620.28274"
        orientation="-744.09448,0"
        id="guide3082" />
     <inkscape:grid
@@ -76,10 +76,12 @@
        empspacing="5"
        visible="true"
        enabled="true"
-       snapvisiblegridlinesonly="true" />
+       snapvisiblegridlinesonly="true"
+       originx="0.0049704739px"
+       originy="0.017365261px" />
     <sodipodi:guide
        orientation="0,1"
-       position="63.913867,24.699887"
+       position="63.918837,24.717252"
        id="guide3079" />
   </sodipodi:namedview>
   <defs
@@ -509,6 +511,16 @@
          transform="matrix(-0.4,0,0,-0.4,-4,0)"
          inkscape:connector-curvature="0" />
     </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#grey_gradient"
+       id="linearGradient3503"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="scale(0.87745775,1.139656)"
+       x1="26.63946"
+       y1="9.8587685"
+       x2="119.23651"
+       y2="9.8587685" />
   </defs>
   <metadata
      id="metadata7">
@@ -526,10 +538,10 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-71.077107,-341.84824)">
+     transform="translate(-71.072137,-309.20471)">
     <g
        id="g3205"
-       transform="matrix(0.09375,0,0,0.09375,71.000463,361.7996)">
+       transform="matrix(0.13734406,0,0,0.13734406,70.964823,333.78407)">
       <path
          style="fill:url(#radialGradient4944);fill-opacity:1;stroke:#7b0000;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
          id="path4912"
@@ -627,7 +639,7 @@
     </g>
     <g
        id="g3298"
-       transform="matrix(-0.47321429,0,0,0.47544643,344.15786,351.84697)">
+       transform="matrix(-0.69326048,0,0,0.69653057,471.1413,319.20344)">
       <rect
          style="opacity:0;color:#000000;fill:url(#linearGradient2855-7);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.96360266;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
          id="rect3872"
@@ -638,7 +650,7 @@
          height="128"
          width="128" />
       <path
-         style="color:#000000;fill:url(#grey_gradient);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.96360266;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         style="color:#000000;fill:url(#linearGradient3503);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.96360266;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
          id="rect3034"
          d="m 29.09375,11.235605 c -3.183804,0 -5.71875,2.566196 -5.71875,5.75 l 0,94.028785 c 0,3.1838 2.534946,5.75 5.71875,5.75 l 69.8125,0 c 3.1838,0 5.71875,-2.5662 5.71875,-5.75 l 0,-70.653785 -21.03125,0 c -4.306108,0 -8.0625,-3.141109 -8.0625,-7.3125 l 0,-21.8125 z m 50.4375,0 0,21.8125 c 0,1.714122 1.631968,3.3125 4.0625,3.3125 l 21.03125,0 z"
          inkscape:connector-curvature="0" />
@@ -689,14 +701,14 @@
          width="59.686375" />
     </g>
     <path
-       style="fill:#5955a9;fill-opacity:0.99215686;stroke:#5955a9;stroke-width:2.43167496;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.99215686;stroke-dasharray:none;marker-start:url(#Arrow1Mstartx0);marker-mid:none;marker-end:url(#Arrow1Mendj)"
-       d="m 120,382.36218 170,0"
+       style="fill:#5955a9;fill-opacity:0.99215686;stroke:#5955a9;stroke-width:3.56241179;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.99215686;stroke-dasharray:none;marker-start:url(#Arrow1Mstartx0);marker-mid:none;marker-end:url(#Arrow1Mendj)"
+       d="m 142.74931,363.90832 249.05055,0"
        id="path4691"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
     <g
        id="g3215"
-       transform="matrix(0.25,0,0,0.25,11.673702,330.69939)">
+       transform="matrix(0.36625082,0,0,0.36625082,-15.949075,288.22216)">
       <g
          word-spacing="normal"
          letter-spacing="normal"
@@ -729,7 +741,7 @@
            x="6.7175145"
            y="132.44711" /></flowRegion><flowPara
          id="flowPara3348" /></flowRoot>    <g
-       transform="matrix(0.25,0,0,0.25,230.34584,330.69939)"
+       transform="matrix(0.36625082,0,0,0.36625082,304.40632,288.22216)"
        id="g3474">
       <g
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;letter-spacing:normal;word-spacing:normal;text-anchor:start;fill:none;stroke:#000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10.43299961;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
@@ -755,17 +767,17 @@
     <text
        sodipodi:linespacing="125%"
        id="text3105"
-       y="377.36218"
-       x="140"
-       style="font-size:12px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#008000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+       y="356.58331"
+       x="172.04938"
+       style="font-size:17.58003998px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#008000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
        xml:space="preserve"><tspan
-         y="377.36218"
-         x="140"
+         y="356.58331"
+         x="172.04938"
          id="tspan3107"
          sodipodi:role="line">WRITE</tspan></text>
     <g
        id="g3271"
-       transform="matrix(0.25,0,0,0.25,86.318504,306.01395)"
+       transform="matrix(0.36625082,0,0,0.36625082,93.405803,252.05791)"
        style="fill:#800000;fill-opacity:1">
       <g
          word-spacing="normal"

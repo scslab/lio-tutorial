@@ -10,13 +10,13 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="273.11542"
-   height="90.209564"
+   width="400.11996"
+   height="122.8746"
    preserveAspectRatio="xMinYMin meet"
-   viewBox="0 0 273.02142 90.19811"
+   viewBox="0 0 399.98226 122.859"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.2 r9819"
+   inkscape:version="0.48.4 r9939"
    sodipodi:docname="lintro.svg">
   <sodipodi:namedview
      id="base"
@@ -25,16 +25,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="3.2951124"
-     inkscape:cx="86.420207"
-     inkscape:cy="9.5212768"
+     inkscape:zoom="1"
+     inkscape:cx="86.425177"
+     inkscape:cy="9.5386421"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
-     showgrid="true"
+     showgrid="false"
      inkscape:window-width="1344"
-     inkscape:window-height="960"
-     inkscape:window-x="117"
-     inkscape:window-y="46"
+     inkscape:window-height="900"
+     inkscape:window-x="82"
+     inkscape:window-y="-32"
      inkscape:window-maximized="0"
      showguides="false"
      inkscape:guide-bbox="true"
@@ -47,37 +47,39 @@
     <sodipodi:guide
        id="guide3064"
        orientation="0,1052.3622"
-       position="-71.086133,-620.30011" />
+       position="-71.081163,-620.28274" />
     <sodipodi:guide
        id="guide3066"
        orientation="-744.09448,0"
-       position="981.27607,-620.30011" />
+       position="981.28104,-620.28274" />
     <sodipodi:guide
        id="guide3072"
        orientation="0,1052.3622"
-       position="-71.086133,-620.30011" />
+       position="-71.081163,-620.28274" />
     <sodipodi:guide
        id="guide3074"
        orientation="-744.09448,0"
-       position="981.27607,-620.30011" />
+       position="981.28104,-620.28274" />
     <sodipodi:guide
        id="guide3080"
        orientation="0,1052.3622"
-       position="-71.086133,-620.30011" />
+       position="-71.081163,-620.28274" />
     <sodipodi:guide
        id="guide3082"
        orientation="-744.09448,0"
-       position="981.27607,-620.30011" />
+       position="981.28104,-620.28274" />
     <inkscape:grid
        id="grid3070"
        type="xygrid"
        empspacing="5"
        visible="true"
        enabled="true"
-       snapvisiblegridlinesonly="true" />
+       snapvisiblegridlinesonly="true"
+       originx="0.0049704739px"
+       originy="0.017365261px" />
     <sodipodi:guide
        id="guide3079"
-       position="63.913867,24.699887"
+       position="63.918837,24.717252"
        orientation="0,1" />
   </sodipodi:namedview>
   <defs
@@ -493,12 +495,12 @@
     </rdf:RDF>
   </metadata>
   <g
-     transform="translate(-71.077107,-341.84824)"
+     transform="translate(-71.072137,-309.20471)"
      id="layer1"
      inkscape:groupmode="layer"
      inkscape:label="Layer 1">
     <g
-       transform="matrix(0.09375,0,0,0.09375,71.000463,361.7996)"
+       transform="matrix(0.13734406,0,0,0.13734406,70.964823,333.78407)"
        id="g3205">
       <path
          inkscape:connector-curvature="0"
@@ -596,7 +598,7 @@
          style="fill:url(#radialGradient3248);fill-opacity:1;fill-rule:evenodd;stroke:#4a4a4a;stroke-width:0.60000002;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
     </g>
     <g
-       transform="matrix(-0.47321429,0,0,0.47544643,344.15786,351.84697)"
+       transform="matrix(-0.69326048,0,0,0.69653057,471.1413,319.20344)"
        id="g3298">
       <rect
          width="128"
@@ -662,10 +664,10 @@
        sodipodi:nodetypes="cc"
        inkscape:connector-curvature="0"
        id="path4691"
-       d="m 120,382.36218 80,0"
-       style="fill:#5955a9;fill-opacity:0.99215686;stroke:#5955a9;stroke-width:2.35899997;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.99215686;stroke-dasharray:2.359, 4.718;stroke-dashoffset:0;marker-start:none;marker-mid:none;marker-end:none" />
+       d="m 142.74931,363.90832 117.20026,0"
+       style="fill:#5955a9;fill-opacity:0.99215686;stroke:#5955a9;stroke-width:3.45594263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.99215686;stroke-dasharray:3.45594271, 6.91188542;stroke-dashoffset:0;marker-start:none;marker-mid:none;marker-end:none" />
     <g
-       transform="matrix(0.25,0,0,0.25,11.673702,330.69939)"
+       transform="matrix(0.36625082,0,0,0.36625082,-15.949075,288.22216)"
        id="g3215">
       <g
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;letter-spacing:normal;word-spacing:normal;text-anchor:start;fill:none;stroke:#000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10.43299961;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
@@ -691,7 +693,8 @@
     <flowRoot
        style="font-size:12px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
        id="flowRoot3342"
-       xml:space="preserve"><flowRegion
+       xml:space="preserve"
+       transform="matrix(1.4650033,0,0,1.4650033,-33.051087,-196.25352)"><flowRegion
          id="flowRegion3344"><rect
            y="132.44711"
            x="6.7175145"
@@ -700,7 +703,7 @@
            id="rect3346" /></flowRegion><flowPara
          id="flowPara3348" /></flowRoot>    <g
        id="g3474"
-       transform="matrix(0.25,0,0,0.25,230.34584,330.69939)">
+       transform="matrix(0.36625082,0,0,0.36625082,304.40632,288.22216)">
       <g
          word-spacing="normal"
          letter-spacing="normal"
@@ -724,14 +727,14 @@
            style="fill:#000000;stroke-width:0" /></g>    </g>
     <text
        xml:space="preserve"
-       style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#ff0000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold"
-       x="205.6423"
-       y="398.56219"
+       style="font-size:70.32015991px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#ff0000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold"
+       x="268.21555"
+       y="387.64139"
        id="text4434"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4436"
-         x="205.6423"
-         y="398.56219">?</tspan></text>
+         x="268.21555"
+         y="387.64139">?</tspan></text>
   </g>
 </svg>
