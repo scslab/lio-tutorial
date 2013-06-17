@@ -2123,7 +2123,7 @@ cond_broadcast (Cond _ waiters) = modifyMVar_ waiters wakeall
 # Exercise: Multi-player Rock, Paper, Scissors
 
 * Allow multiple players to connect to server
-    * Pair each pair of players up in a Rock, Paper, Scissors game  
+    * Pair each two consecutive connections in a Rock, Paper, Scissors game  
       (Won't use `computerVsUser` any more)
 
 <!--
