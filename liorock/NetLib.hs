@@ -1,6 +1,12 @@
 {-# LANGUAGE Trustworthy #-}
 
-module NetLib where
+module NetLib
+  ( Handle
+  , hPutStrLn, hPutStrLnP, hGetLine
+  , hSetBufferingP, hCloseP
+  , listenOn, acceptP, PortID(..), IO.withSocketsDo
+  , Socket
+  ) where
 
 import safe qualified Data.ByteString.Char8 as S8
 import Network (PortID(..), HostName, PortNumber)
@@ -9,6 +15,7 @@ import safe qualified System.IO as IO
 
 import safe LIO
 import safe LIO.DCLabel
+import LIO.TCB
 import LIO.TCB.LObj
 
 -- | simple LIO wrappers for system library functions.  Names that end
@@ -36,6 +43,14 @@ hCloseP p = blessPTCB IO.hClose p
 
 type Socket = LObj DCLabel IO.Socket
 
+listenOn :: PortID -> DC (Socket, DCPriv)
+listenOn port = do
+  sock <- blessTCB IO.listenOn (LObjTCB dcPub port)
+  let net = principal $ "tcp://localhost:" ++ show port
+      lbl = (net %% net)
+      priv = PrivTCB $ toComponent net
+  return (LObjTCB lbl sock, priv)
+
 acceptP :: DCPriv -> Socket -> DC (Handle, Principal)
 acceptP p s = do
   (ioh, name, port) <- blessPTCB IO.accept p s
@@ -46,4 +61,3 @@ acceptP p s = do
   hSetBufferingP p h IO.LineBuffering
   return (h, net)
 
-test = evalDC $ hGetLine (LObjTCB (True %% True) IO.stdin)
