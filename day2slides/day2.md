@@ -454,6 +454,69 @@ mainLIO = do
     * $\langle S_1$ `%%` $I_1\rangle\sqcap \ \langle S_2$ `%%` $I_2\rangle=$
       $\langle S_1 \lor S_2$ `%%` $I_1 \land I_2\rangle$
 
+
+# Example: encoding `MilLabel` with DCLabels
+
+~~~~ {.haskell}
+topSecret  = "TopSecret" /\ "Classified" /\ "Public"
+classified = "Classified" /\ "Public"
+public     = "Public"
+
+crypto  = "Crypto"
+nuclear = "Nuclear"
+~~~~
+
+* Examples
+
+~~~~ {.haskell}
+*Main> (topSecret /\ nuclear /\ crypto %% True) `canFlowTo`
+       (topSecret /\ crypto %% True)
+~~~~
+
+> - False
+
+~~~~ {.haskell}
+*Main> (topSecret /\ crypto %% True) `canFlowTo`
+       (topSecret /\ nuclear /\ crypto %% True)
+~~~~
+
+> - True
+
+~~~~ {.haskell}
+*Main> (topSecret /\ crypto %% True) `canFlowTo`
+       (topSecret  %% True)
+~~~~
+
+> - False
+
+# DCLabel privileges 
+
+* A privilege description (`DCPrivDesc`) is a label components (`Component`)
+
+    ~~~~ {.haskell}
+    type DCPrivDesc = Component
+    ~~~~ 
+
+    * No different from secrecy and integrity components
+
+* A privilege is a wrapped description
+
+    ~~~~ {.haskell}
+    type DCPriv = Priv DCPrivDesc
+    ~~~~ 
+
+* Create privileges with `PrivTCB`:
+
+    ~~~~ {.haskell}
+    import LIO.TCB (PrivTCB)
+
+    topSecretPriv = PrivTCB topSecret
+    cryptoPriv    = PrivTCB crypto
+    ~~~~
+
+
+
+
 # Clearance and DC labels
 
 * Convenient to have different default $L_\mathrm{cur}$ and $C_\mathrm{cur}$
