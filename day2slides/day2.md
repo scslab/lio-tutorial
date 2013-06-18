@@ -315,6 +315,13 @@ forkLIO :: LIO l () -> LIO l ()
 
 * [`LIORef`s][`LIORef`] - labeled, mutable values
 
+    ~~~~ {.haskell}
+    data LIORef l a
+    newLIORefP :: PrivDesc l p => Priv p -> l -> a -> LIO l (LIORef l a)
+    readLIORefP :: PrivDesc l p => Priv p -> LIORef l a -> LIO l a
+    writeLIORefP :: PrivDesc l p => Priv p -> LIORef l a -> a -> LIO l ()
+    ~~~~
+
 # DC Labels
 
 * We would ideally like $L_\emptyset$ to be in middle of lattice
