@@ -779,13 +779,11 @@ forkLIO :: LIO l () -> LIO l ()
     * Haskell's abstractions at work - curry privilege into first argument of
       function
 
-* [`LIORef`s][`LIORef`] - labeled, mutable values
+* Delegating DC privileges:
 
     ~~~~ {.haskell}
-    data LIORef l a
-    newLIORefP :: PrivDesc l p => Priv p -> l -> a -> LIO l (LIORef l a)
-    readLIORefP :: PrivDesc l p => Priv p -> LIORef l a -> LIO l a
-    writeLIORefP :: PrivDesc l p => Priv p -> LIORef l a -> a -> LIO l ()
+    module LIO.DCLabel.Privs
+    dcDelegatePriv :: DCPriv -> DCPrivDesc -> Maybe DCPriv
     ~~~~
 
 * [`LObj`][`LObj`] - associates an IO object with a label
@@ -796,6 +794,19 @@ forkLIO :: LIO l () -> LIO l ()
     ~~~~ {.haskell}
     blessTCB :: Label l => (a -> IO b) -> LObj l a -> LIO l b 
     ~~~~
+
+# Miscellany Continued
+
+* [`LIORef`s][`LIORef`] - labeled, mutable values
+
+    ~~~~ {.haskell}
+    data LIORef l a
+    newLIORefP :: PrivDesc l p => Priv p -> l -> a -> LIO l (LIORef l a)
+    readLIORefP :: PrivDesc l p => Priv p -> LIORef l a -> LIO l a
+    writeLIORefP :: PrivDesc l p => Priv p -> LIORef l a -> a -> LIO l ()
+    ~~~~
+
+* [`Gate`s][`Gate`] prove to untrusted code that you own a privilege
 
 # Defining labeled objects
 
@@ -859,3 +870,5 @@ or [https://bit.ly/1295qG8](https://bit.ly/1295qG8)
 [`LIORef`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-LIORef.html
 [`LMVar`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-Concurrent-LMVar.html
 [`LObj`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-TCB-LObj.html
+[`Gate`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-Privs.html#t:Gate
+
