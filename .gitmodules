@@ -1,0 +1,3 @@
+[submodule "lio-exercises"]
+	path = lio-exercises
+	url = git://github.com/scslab/lio-exercises.git
