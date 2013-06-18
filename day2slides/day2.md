@@ -64,25 +64,140 @@ instance (Label l) => Monad (LIO l) where ...
     * `unlabel` raises current label to:  old current label $\sqcap$ value label
     * `unlabelP` uses privileges to raise label less
 
-# Other `LIO` features
+# What is the LIO Monad?
 
-* Clearance
-    * Represents upper bound on current label
-    * Can lower clearance to label, but raising requires privileges
-    * Allows "need-to-know" policies, reducing danger of covert channels
+~~~~ {.haskell}
+data LIOState l = LIOState { lioCurrentLabel :: l, lioClearance :: l }
+data LIO l a = UnsafeLIO { unLIO :: IORef (LIOState l) -> IO a }
+~~~~
 
-* Haskell's abstraction mechanisms work well for guarding privileges
-    * E.g., curry privileges into first argument of function
+# Current Label
 
-* Gates -- Functions to which caller can prove posession of privilege
+~~~~ {.haskell}
+getLabel :: Label l => LIO l l
+~~~~
 
-* Labeled mutable variables (`LIORef`s)
+* Represents the label of executing thread at a point in time
 
-* Threads
-    * Can use threads to compute things at different labels  
-      (e.g., interact with multiple web sites before combining the data)
-    * Labeled `MVar`s (`LMVars`)
+* Restricts which data we can read and what side-effects we can perform
 
+    * Can write if current label `canFlowTo` target's label
+
+    * Can read if target's label `canFlowTo` current label
+
+* Certain operations (e.g. `unlabel`) change the current label
+
+    * For example, to read a `Labeled` value with a high label, I must raise
+      my current label.
+
+# Clearance
+
+~~~~ {.haskell}
+getClearance :: Label l => LIO l l
+~~~~
+
+* Limits how high the current label can get
+
+    * Both writes and reads must be below the clearance
+
+* Allows "need-to-know" policies
+
+    * Restricts the power of covert channels
+
+* Can lower clearance to label, but raising requires privileges
+
+# `Labeled` Values under the hood
+
+* `Labeled` values respect the current labal and clearance of a thread:
+
+    ~~~~ {.haskell}
+    data Labeled l a = LabeledTCB l a
+
+    label :: Label l => l -> v -> LIO l (Labeled l v)
+    label l a = guardAlloc >> return $ LabeledTCB l v
+      where guardAlloc = do
+              currentLabel <- getLabel
+              clearance <- getClearance
+              unless (canFlowTo currentLabel l) $! throwLIO CurrentLabelViolation
+              unless (canFlowTo l clearance) $! throwLIO ClearanceViolation
+
+    unlabel :: Label l => Labeled l v -> LIO l v
+    unlabel (LabeledTCB l v) = taint >> return v
+      where taint = do
+              currentLabel <- getLabel
+              clearance <- getClearance
+              unless (canFlowTo l clearance) $! throwLIO ClearanceViolation
+              setLabelTCB (l `lub` currentLabel)
+    ~~~~
+
+# Concurrency - [`LMVar`s][`LMVar`]
+
+  * Labeled version of `MVar`s with fixed label
+
+    ~~~~ {.haskell}
+    module LIO.Concurrent.LMVar
+
+    data LMVar l v = LMVarTCB l (MVar v)
+
+    newEmptyLMVar :: l -> LIO l (LMVar l a)
+
+    putLMVar :: Label l => LMVar l v -> -> v -> LIO l ()
+    putLMVar (LMVarTCB l mvar) v = guardWrite l >> ioTCB $ IO.putMVar mvar v
+
+    takeLMVar :: Label l => LMVar l v -> LIO l v
+    takeLMVar (LMVar l mvar) = guardWrite l >> ioTCB $ IO.takeMVar mvar
+
+    guardWrite :: Label l => l LIO l ()
+    guardWrite l = do
+      taint l
+      currentLabel <- getLabel
+      clearance <- getClearance
+      unless (canFlowTo currentLabel lref) $! throwLIO CurrentLabelViolation
+      unless (canFlowTo lref clearance) $! throwLIO ClearanceViolation
+    ~~~~
+
+# Concurrency - Threads
+
+~~~~ {.haskell}
+module LIO.Concurrent
+forkLIO :: LIO l () -> LIO l ()
+~~~~
+
+* Can use threads to compute things at different labels  
+  (e.g., interact with multiple web sites before combining the data)
+
+* `LMVars` used to synchronize and share data between threads
+
+    ~~~~ {.haskell}
+    liomain :: LIO DCLabel ()
+    liomain = do
+      secretVar <- newEmptyLMVar ("alice" %% True)
+      forkLIO $ do
+        taint $ "alice" %% True
+        putLMVar secretVar "Please do not share"
+
+      forkLIO $ do
+        taint $ "bob" %% True
+        logP bobPriv "I'll wait for a message from Alice"
+        secret <- takeLMVar passwordVar
+        logP bobPriv password -- This will fail!
+    ~~~~
+
+# Miscellany
+
+* Remeber privileges?
+
+    ~~~~ {.haskell}
+    labelP :: PrivDesc l p => Priv p -> a -> LIO l (Labeled a)
+    ulabelP :: PrivDesc l p => Priv p -> Labeled a -> LIO l a
+    putMVarP :: PrivDesc l p => Priv p -> LMVar l a -> a -> LIO l ()
+    takeLMVarP :: PrivDesc l p => Priv p -> LMVar l a -> LIO l a
+    ~~~~
+
+    * Haskell's abstractions at work - curry privilege into first argument of
+      function
+
+* [`LIORef`s][`LIORef`] - labeled, mutable values
 
 # DC Labels
 
@@ -190,3 +305,7 @@ instance (Label l) => Monad (LIO l) where ...
       hSetBufferingP p h IO.LineBuffering
       return (h, net)
     ~~~ 
+
+
+[`LIORef`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-LIORef.html
+[`LMVar`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-Concurrent-LMVar.html
