@@ -121,29 +121,87 @@ MilLabel {sensitivity = Public, compartments = fromList []}
 
 * Define privileges as any type with $\sqsubseteq_p$ for a given label type
 
+* How do we define $L_1 \sqsubseteq_p L_2$?
+
+    1. Use $p$ to downgrade $L_1$ to the lowest possible point in lattice $L_1'$
+
+    2. Check $L_1' \sqsubseteq_p L_2$
+
+* Privileges for `MilLabel`:
+
+    ~~~~ {.haskell}
+    data MilPriv = MilPriv SimpleLabel (Set Compartment)
+    ~~~~
+
+    * The first argument dictates how to downgrade sensitivity. 
+
+    * The second argument dictates how compartments are removed.
+
+    * E.g., Privilege `TopSecret`@{`Crypto`,`Nuclear`} can declassify
+      anything.
+
+# Exercise
+
+* Define `downgrade`
+
+    ~~~~ {.haskell}
+    downgrade (MilPriv sp cp) (MilLabel s0 c0) =  ???
+    ~~~~
+
+* Example use
+
+    ~~~~
+    *Main> downgrade (MilPriv TopSecret (set []))
+                     (MilLabel TopSecret (set []))
+    MilLabel {sensitivity = Public, compartments = fromList []}
+    *Main> downgrade (MilPriv TopSecret (set []))
+                     (MilLabel Classified (set [Crypto]))
+    MilLabel {sensitivity = Public, compartments = fromList [Crypto]}
+    *Main> downgrade (MilPriv TopSecret (set [Crypto, Nuclear]))
+                     (MilLabel TopSecret (set [Crypto]))
+    MilLabel {sensitivity = Public, compartments = fromList []}
+    *Main> downgrade (MilPriv TopSecret (set [Crypto, Nuclear]))
+                     (MilLabel Classified (set [Crypto]))
+    MilLabel {sensitivity = Public, compartments = fromList []}
+    ~~~~
+
+# Answer: 
+
+~~~~ {.haskell}
+downgrade (MilPriv sp cp) (MilLabel s0 c0) = 
+    let s1 = if sp >= s0
+               then Public else s0
+        c1 = c0 `Set.difference` cp
+    in MilLabel s1 c1
+~~~~
+
+
+# Let's define $\sqsubseteq_p$ class
+
+* Privileges are types that are instances of the `PrivDesc` class
+
     ~~~~ {.haskell}
     class Label l => PrivDesc l p where
       canFlowToPrivDesc :: p -> l -> l -> Bool
       partDowngradePrivDesc :: p -> l -> l -> l
-      -- Use p to get as close to second l as possible from first
     ~~~~
 
-* Example:
+* `canFlowToPrivDesc` implements $\sqsubseteq_p$
+
+* `partDowngradePrivDesc priv lcur lgoal`
+   
+     * Downgrade `lcur` as close to `lgoal` as possible using `priv`
+     
+     * We'll see where this is used later!
+
+* Define instance for `MilLabel` and `MilPriv`
 
     ~~~~ {.haskell}
-    data MilPriv = MilPriv SimpleLabel (Set Compartment)
-
     instance PrivDesc MilLabel MilPriv where
-      canFlowToPrivDesc (MilPriv sp cp) (MilLabel s0 c0) l2 =
-        let s1 = if sp >= s0
-                   then Public else s0 -- "declassify"
-            c1 = c0 `Set.difference` cp
-        in MilLabel s1 c1 `canFlowTo` l2
+      canFlowToPrivDesc p l1 l2 = downgrade p l1 `canFlowTo` l2
+      partDowngradePrivDesc p l1 l2 = downgrade p l1 `lub` l2
     ~~~~
     
-    * For now, let GHC complain about lack of `partDowngradePrivDesc` definition
-
-* What should the `canFlowToPrivDesc` function do?
 
 # Example use
 
