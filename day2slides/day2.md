@@ -650,6 +650,14 @@ forkLIO :: LIO l () -> LIO l ()
 
 # Defining labeled objects
 
+~~~~
+$ git clone https://github.com/scslab/lio-exercises.git
+~~~~
+
+or [https://bit.ly/1295qG8](https://bit.ly/1295qG8)
+
+# Defining labeled objects
+
 ~~~ {.haskell}
 {-# LANGUAGE Trustworthy #-}
 
@@ -678,9 +686,15 @@ test = evalDC $ hPutStrLnP myPriv stdin "Hello world"
 
 # Main exercise: LIO multi-player game
 
+~~~~
+$ git clone https://github.com/scslab/lio-exercises.git
+~~~~
+
+or [https://bit.ly/1295qG8](https://bit.ly/1295qG8)
+
 * `NetLib.hs` -- trusted (labeled) network library
 
-    *`{-# LANGUAGE Trustworthy #-}`
+      `{-# LANGUAGE Trustworthy #-}`
 
 * `liorock.hs` -- main 
 
@@ -692,7 +706,6 @@ test = evalDC $ hPutStrLnP myPriv stdin "Hello world"
 
 * Goal: Make it impossible for third-party translations of game (that
   substitute alternate `Play.hs`) to cheat
-
 
 [`LIORef`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-LIORef.html
 [`LMVar`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-Concurrent-LMVar.html
