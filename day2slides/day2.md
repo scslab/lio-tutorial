@@ -1,5 +1,5 @@
 % Intro to Haskell and LIO
-% David Mazi&egrave;res
+% Amit Levy and Deian Stefan
 %
 
 # `LIO` Monad
