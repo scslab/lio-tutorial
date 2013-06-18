@@ -61,7 +61,7 @@
 
 * Is this lattice a total order?
 
-    * No! Consider `(TopSecret, Crypto)` and `(TopSecret, Nuclear)`
+    * No! Consider `(TopSecret, {Crypto})` and `(TopSecret, {Nuclear})`
 
 * Examples of use:
 
@@ -137,7 +137,7 @@ MilLabel {sensitivity = Public, compartments = fromList []}
 
     * The second argument dictates how compartments are removed.
 
-    * E.g., Privilege `TopSecret`@{`Crypto`,`Nuclear`} can declassify
+    * E.g., Privilege `TopSecret@{Crypto,Nuclear}` can declassify
       anything.
 
 # Exercise
@@ -220,6 +220,12 @@ False
 True
 ~~~
 
+* Q: What's the problem with relying on `PrivDesc` in security-critical
+  code?
+
+> - A: Anybody can create an instance of `PrivDesc`: can't run
+    untrusted code!
+
 # Controlling privilege creation
 
 * Really, `PrivDesc` instance _describes_ privileges, but doesn't
@@ -234,7 +240,7 @@ True
     guardAllocP :: PrivDesc l p => Priv p -> l -> LIO l ()
     guardAllocP p l = do
       ...
-      unless (canFlowToP p ...) $! throwLIO CurrentLabelViolation
+      unless (canFlowToP p ...) $ throwLIO CurrentLabelViolation
       ...
 
     -- Wrapper that uses actual privileges
@@ -250,15 +256,46 @@ True
 
     * Use Safe Haskell to ensure only trusted code sees `PrivTCB` constructor
 
-
 # Using labels in Haskell
 
 ~~~~ {.haskell}
 instance (Label l) => Monad (LIO l) where ...
 ~~~~
 
-* Introduce new _labeled IO_ monad `LIO`.  Like `RIO`, except:
-    * Also keeps track of thread's _current label_ and _current clearance_
+* Introduce new _labeled IO_ monad `LIO`.  Like `RIO`, except it
+  carries two labels:
+
+    * _Current label_ restricts (with $\sqsubseteq$) where the thread
+      can write to and read from
+
+* Example: current label is `(TopSecret, {Crypto})`
+
+    * Can write to objects labeled `(TopSecret, {Crypto})` and
+      `(TopSecret, {Nuclear, Crypto})`,
+
+    * Can read from any object except those containing the `Nuclear`
+      classification.
+
+* Can we safely allow the thread with current label 
+  `(TopSecret, {Crypto})` to read a document labeled 
+  `(TopSecret, {Nuclear, Crypto})`?
+
+    * Yes! If we can guarantee that it does not leak such data.
+
+    * How? Raise the current label to `(TopSecret, {Nuclear, Crypto})`
+
+        * Now thread cannot write to objects labeled 
+          `(TopSecret, {Crypto})` anymore
+
+* Clearance: restricts how high your current label can be raised, and
+  the label of objects you can allocate
+
+    * E.g.. if the thread current clearance is `(TopSecret, {})` it
+      cannot read, write or allocate any objects that have an
+      associated compartment
+
+
+# Labeling values
 
 * Represent labeled pure values with type wrapper
 
@@ -272,11 +309,46 @@ instance (Label l) => Monad (LIO l) where ...
     label :: Label l => l -> a -> LIO l (Labeled l a)
     unlabel :: (Label l) => Labeled l a -> LIO l a
     unlabelP :: Priv l p => p -> Labeled l a -> LIO l a
+    labelOf  :: Labeled l a -> l
     ~~~~
 
     * `label` requires value label to be between current label & clearance
-    * `unlabel` raises current label to:  old current label $\sqcap$ value label
-    * `unlabelP` uses privileges to raise label less
+    * `unlabel` raises current label to:  old current label $\sqcup$ value label
+    * `unlabelP` uses privileges to raise label less (remember
+      `partDowngradePrivDesc`)
+    * `labelOf` returns the label of a labeled value
+
+# Example:
+
+~~~~ {.haskell}
+initCurLabel :: LIOState MilLabel
+initCurLabel = 
+  LIOState { lioLabel = MilLabel Public (set [])
+           , lioClearance = MilLabel TopSecret (set [Crypto, Nuclear]) }
+
+main = do
+  res <- runLIO mainLIO initCurLabel 
+  print res
+
+
+mainLIO :: LIO MilLabel String
+mainLIO = do
+  lc <- label (MilLabel Classified (set [Crypto])) "w00t"
+  c <- unlabel lc
+  lts <- label (MilLabel TopSecret (set [Crypto, Nuclear])) $ 
+            c ++ ";cbc-nuke-128"
+  ts <- unlabel lts
+  -- label (MilLabel TopSecret (set [Nuclear])) $ "leaking...crypto: " ++ ts
+  return ts
+~~~~
+
+* In practice, want to catch all exception in `main`
+
+* What happens when you uncomment the commented-out line?
+
+* Exercise: what happens when you change clearance to `(TopSecret, {Crypto})`?
+
+    
 
 # DC Labels
 
