@@ -412,63 +412,61 @@ forkLIO :: LIO l () -> LIO l ()
     writeLIORefP :: PrivDesc l p => Priv p -> LIORef l a -> a -> LIO l ()
     ~~~~
 
+* [`LObj`][`LObj`] - associates an IO object with a label
+
+    * Can use `blessTCB` to turn an `IO` action into an `LIO` action.
+      `guardWrite` on the `LObj`'s label
+
+    ~~~~ {.haskell}
+    blessTCB :: Label l => (a -> IO b) -> LObj l a -> LIO l b 
+    ~~~~
+
 # Defining labeled objects
 
-* Create `NetLib.hs`, play with variations on `test`:
+~~~ {.haskell}
+{-# LANGUAGE Trustworthy #-}
 
-    ~~~ {.haskell}
-    {-# LANGUAGE Trustworthy #-}
+module ToyLIO where
+import safe qualified System.IO as IO
+import safe LIO
+import safe LIO.DCLabel
+import LIO.TCB.LObj
 
-    module NetLib where
-    import Network (PortID(..), HostName, PortNumber)
-    import qualified Network as IO
-    import safe qualified System.IO as IO
+type Handle = LObj DCLabel IO.Handle
 
-    import safe LIO
-    import safe LIO.DCLabel
-    import LIO.TCB.LObj
+hPutStrLnP :: DCPriv -> Handle -> String -> LIO DCLabel ()
+hPutStrLnP = blessPTCB IO.hPutStrLn
 
-    type Handle = LObj DCLabel IO.Handle
+hPutStrLn :: Handle -> String -> LIO DCLabel ()
+hPutStrLn = blessTCB IO.hPutStrLn
 
-    hPutStrLnP :: PrivDesc l p =>
-       Priv p -> LObj l IO.Handle -> String -> LIO l ()
-    hPutStrLnP = blessPTCB IO.hPutStrLn
+stdout :: Handle
+stdout = LObjTCB (True %% True) IO.stdout
 
-    hPutStrLn :: Label l => LObj l IO.Handle -> String -> LIO l ()
-    hPutStrLn = blessTCB IO.hPutStrLn
+myPriv :: DCPriv
+myPriv = PrivTCB (True %% True)
 
-    hGetLine :: Label l => LObj l IO.Handle -> LIO l String
-    hGetLine h = blessTCB IO.hGetLine h
-
-    test = evalDC $ hGetLine (LObjTCB (True %% True) IO.stdin)
-    ~~~
+test = evalDC $ hPutStrLnP myPriv stdin "Hello world"
+~~~
 
 # Main exercise: LIO multi-player game
 
-* `NetLib.hs` -- `{-# LANGUAGE Trustworthy #-}`
-* `Common.hs` -- `{-# LANGUAGE Safe #-}` (`Move`, `outcome`, etc.)
-* `Play.hs` -- `{-# LANGUAGE Safe #-}`
-* `liorock.hs` (mainly IO code)
+* `NetLib.hs` -- trusted (labeled) network library
+
+    *`{-# LANGUAGE Trustworthy #-}`
+
+* `liorock.hs` -- main 
+
+* Probably also:
+
+    * `Common.hs` -- `{-# LANGUAGE Safe #-}` (`Move`, `outcome`, etc.)
+
+    * `Play.hs` -- `{-# LANGUAGE Safe #-}`
 
 * Goal: Make it impossible for third-party translations of game (that
   substitute alternate `Play.hs`) to cheat
 
-* Label each socket with the host/port number, as follows
-
-    ~~~ {.haskell}
-    type Socket = LObj DCLabel IO.Socket
-
-    acceptP :: DCPriv -> Socket -> DC (Handle, Principal)
-    acceptP p s = do
-      (ioh, name, port) <- blessPTCB IO.accept p s
-      let net = principal $ "tcp://" ++ name ++ ":" ++ show port
-          label = dcLabel (privDesc p \/ net) (privDesc p \/ net)
-      guardAllocP p label
-      let h = LObjTCB label ioh
-      hSetBufferingP p h IO.LineBuffering
-      return (h, net)
-    ~~~ 
-
 
 [`LIORef`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-LIORef.html
 [`LMVar`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-Concurrent-LMVar.html
+[`LObj`]: http://hackage.haskell.org/packages/archive/lio/latest/doc/html/LIO-TCB-LObj.html
