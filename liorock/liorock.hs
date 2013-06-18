@@ -25,9 +25,9 @@ runGame refereePriv pd us usmv them themmv = do
 
 main :: IO ()
 main = withSocketsDo $ do
-  putStrLn $ "Listening on " ++ show port
   evalDC $ do
     (sock, refereePriv) <- listenOn port
+    logP refereePriv $ "Listening on " ++ show port
     setClearance (dcLabel (privDesc refereePriv) dcTrue)
     forever $ do
       (h1, p1) <- acceptP refereePriv sock
