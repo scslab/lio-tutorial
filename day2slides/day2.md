@@ -1,11 +1,8 @@
-% Intro to Haskell and LIO
-% David Mazi&egrave;res
+% Intro to LIO
+% Amit Levy and Deian Stefan
 %
 
 # `LIO` Monad
-<!--
-[[Stefan]](http://www.cse.chalmers.se/~russo/publications_files/haskell11.pdf)
--->
 
 * Let's define `Label`s as points on a lattice
     (type with $\sqsubseteq$, $\sqcap$, and $\sqcup$)
@@ -193,31 +190,3 @@ instance (Label l) => Monad (LIO l) where ...
       hSetBufferingP p h IO.LineBuffering
       return (h, net)
     ~~~ 
-
-
-[cabal-install]: http://hackage.haskell.org/package/cabal-install
-[RWH]: http://book.realworldhaskell.org/
-[Platform]: http://hackage.haskell.org/platform/
-[GHC]: http://www.haskell.org/haskellwiki/GHC
-[GHCdoc]: http://www.haskell.org/ghc/docs/latest/html/users_guide/index.html
-[GHCI]: http://www.haskell.org/ghc/docs/latest/html/users_guide/ghci.html
-[Hoogle]: http://www.haskell.org/hoogle/
-[DMR]: http://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-930004.5.5
-[DMRWiki]: http://www.haskell.org/haskellwiki/Monomorphism_restriction
-[Awkward]: http://research.microsoft.com/en-us/um/people/simonpj/papers/marktoberdorf/mark.pdf
-[default]: http://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-790004.3.4
-
-
-
-[SafeHaskell]: http://www.haskell.org/ghc/docs/latest/html/users_guide/safe-haskell.html
-
-[`Network`]: http://hackage.haskell.org/packages/archive/network/latest/doc/html/Network.html
-[imprecise exceptions]: http://research.microsoft.com/en-us/um/people/simonpj/papers/imprecise-exn.htm
-[`Control.Exception`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Exception.html
-[`Control.Concurrent`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Concurrent.html
-[`Control.Concurrent.Chan`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Concurrent-Chan.html
-[`Network.Socket`]: http://hackage.haskell.org/packages/archive/network/latest/doc/html/Network-Socket.html
-[`System.Timeout`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/System-Timeout.html
-[`MVar`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Concurrent-MVar.html
-[`bracket`]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Control-Exception.html#v:bracket
-[RFC3493]: http://tools.ietf.org/html/rfc3493
