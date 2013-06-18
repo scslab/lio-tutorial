@@ -49,45 +49,46 @@
 
     data Compartment = Nuclear | Crypto deriving (Eq, Ord, Show)
 
-    data MilLabel = MilLabel { sensitivy   :: SimpleLabel
-                             , compartmens :: Set Compartment
+    data MilLabel = MilLabel { sensitivity  :: SimpleLabel
+                             , compartments :: Set Compartment
                              } deriving (Eq, Show)
     ~~~~
 
+
 ![](millattice.png)
+
+# Exercise: define the `Label` instance
 
 * Is this lattice a total order?
 
-    > - No! Consider `(TopSecret, Crypto)` and `(TopSecret, Nuclear)`
+    * No! Consider `(TopSecret, Crypto)` and `(TopSecret, Nuclear)`
 
-# Exercise
+* Examples of use:
 
-* Define the `Label` instance
+~~~ {.haskell}
+*Main> let set x = Data.Set.fromList x
+*Main> MilLabel Public (set [Nuclear]) `canFlowTo`
+       MilLabel TopSecret (set [Nuclear, Crypto])
+True
+*Main> MilLabel Public (set [Nuclear]) `canFlowTo` 
+       MilLabel Classified (set [Crypto])
+False
+*Main> MilLabel Classified (set [Crypto]) `canFlowTo`
+       MilLabel Public (set [Nuclear])
+False
+*Main> MilLabel Classified (set [Crypto]) `glb` MilLabel Public (set [Nuclear])
+MilLabel {sensitivity = Public, compartments = fromList []}
+~~~
 
-    ~~~~ {.haskell}
-    instance Label MilLabel where
-      (MilLabel s1 c1) `lub` (MilLabel s2 c2) = ???
-      (MilLabel s1 c1) `glb` (MilLabel s2 c2) = ???
-      (MilLabel s1 c1) `canFlowTo` (MilLabel s2 c2) = ???
-    ~~~~
+* Hint: Start by expressing the lattice properties using set theory
 
-* Useful library: `Data.Set`
+* Use library `Data.Set` vs. set as lists
 
     ~~~~ {.haskell}
     import Data.Set (Set)
     import qualified Data.Set as Set
-
-    -- Combining sets
-    Set.union
-    Set.difference
-    Set.intersection
-
-    -- Membership tests
-    Set.member
-    Set.isSubsetOf
     ~~~~
 
-* Hint: Start by expressing the lattice properties using set theory
 
 # Answer
 

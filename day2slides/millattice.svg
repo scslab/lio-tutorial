@@ -16,7 +16,10 @@
    viewBox="0 0 792pt 612pt"
    preserveAspectRatio="xMinYMin meet"
    height="375.69019"
-   width="996.20618">
+   width="939.44055"
+   inkscape:export-filename="/home/d/hack/ll-tutorial/day2slides/millattice.png"
+   inkscape:export-xdpi="59.889774"
+   inkscape:export-ydpi="59.889774">
   <sodipodi:namedview
      inkscape:document-units="in"
      pagecolor="#ffffff"
@@ -25,12 +28,12 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.78290123"
-     inkscape:cx="511.89659"
-     inkscape:cy="142.33664"
+     inkscape:cx="375.04616"
+     inkscape:cy="142.33668"
      inkscape:current-layer="g4323-4"
      id="namedview6"
      showgrid="false"
-     inkscape:window-width="1364"
+     inkscape:window-width="1022"
      inkscape:window-height="752"
      inkscape:window-x="0"
      inkscape:window-y="14"
@@ -47,7 +50,7 @@
        visible="true"
        enabled="true"
        snapvisiblegridlinesonly="true"
-       originx="492.78093px"
+       originx="465.54656px"
        originy="-1961.6165px" />
   </sodipodi:namedview>
   <defs
@@ -632,7 +635,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -640,7 +643,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(388.49559,1979.7801)">
+     transform="translate(361.26122,1979.7801)">
     <g
        id="g3516"
        transform="matrix(0.5962152,0,0,0.5962152,9.3764991,-50.487081)">
@@ -664,15 +667,15 @@
          transform="scale(1,-1)"
          xml:space="preserve"
          style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
-         x="-399.87454"
+         x="-370.34329"
          y="-2235.2551"
          id="text3030-7-8"
          sodipodi:linespacing="125%"><tspan
            sodipodi:role="line"
            id="tspan3032-2-2"
-           x="-399.87454"
+           x="-370.34329"
            y="-2235.2551"
-           style="font-size:24px">(Confidential, {Nuclear})</tspan></text>
+           style="font-size:24px">(Classified, {Nuclear})</tspan></text>
       <text
          transform="scale(1,-1)"
          xml:space="preserve"
@@ -685,20 +688,20 @@
            id="tspan3032-2-1"
            x="261.81732"
            y="-2235.7942"
-           style="font-size:24px">(Confidential, {Crypto})</tspan></text>
+           style="font-size:24px">(Classified, {Crypto})</tspan></text>
       <text
          transform="scale(1,-1)"
          xml:space="preserve"
          style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
-         x="-6.5994439"
+         x="10.728004"
          y="-2094.4824"
          id="text3030-7-4"
          sodipodi:linespacing="125%"><tspan
            sodipodi:role="line"
            id="tspan3032-2-21"
-           x="-6.5994439"
+           x="10.728004"
            y="-2094.4824"
-           style="font-size:24px">(Confidential, {})</tspan></text>
+           style="font-size:24px">(Classified, {})</tspan></text>
       <g
          transform="translate(1.703,0)"
          id="g4873">
@@ -807,7 +810,7 @@
            id="tspan3032-2"
            x="203.4371"
            y="-2397.9412"
-           style="font-size:24px;fill:#000000">(Confidential, {Nuclear, Crypto})</tspan></text>
+           style="font-size:24px;fill:#000000">(Classified, {Nuclear, Crypto})</tspan></text>
       <path
          inkscape:connector-curvature="0"
          id="path3925-7-5-0"
