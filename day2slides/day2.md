@@ -330,10 +330,26 @@ instance (Label l) => Monad (LIO l) where ...
 
 # What is the LIO Monad?
 
-~~~~ {.haskell}
-data LIOState l = LIOState { lioCurrentLabel :: l, lioClearance :: l }
-data LIO l a = UnsafeLIO { unLIO :: IORef (LIOState l) -> IO a }
-~~~~
+* Remember the RIO Monad?
+
+    ~~~~ {.haskell}
+    newtype RIO a = UnsafeRIO (IO a)
+    ~~~~
+
+* RIO statically restricts which actions can be performed (e.g. can only open
+  files that match a fixed pattern)
+
+* LIO is similar, but instead carries information about what kinds of actions
+  a thread can perform.
+
+    ~~~~ {.haskell}
+    data LIOState l = LIOState { lioCurrentLabel :: l, lioClearance :: l }
+    newtype LIO l a = UnsafeLIO { unLIO :: IORef (LIOState l) -> IO a }
+
+    instance Monad (LIO l)
+    ~~~~
+
+    * Decisions about which side effects to allow are made dynamically
 
 # Current Label
 
@@ -353,6 +369,100 @@ getLabel :: Label l => LIO l l
 
     * For example, to read a `Labeled` value with a high label, I must raise
       my current label.
+
+# Current Label - Example
+
+~~~~ {.haskell}
+nickname :: Labeled DCLabel String
+nickname = LabeledTCB (True %% True) "dm"
+
+emailAddress :: Labeled DCLabel String
+emailAddress = LabeledTCB ("dm" \/ "amit" \/ "deian" %% True)
+                "mazieres-smeisvhac56hquuvuqdggqe@nospam.scs.stanford.edu"
+
+personalEmail :: Labeled DCLabel String
+personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+~~~~
+
+* Say we start running with public current label (True %% True). What's the
+  current label after performing the following operations?
+
+    ~~~~ {.haskell}
+    unlabel nickname
+    ~~~~
+
+> - (True %% True)
+
+# Current Label - Example
+
+~~~~ {.haskell}
+nickname :: Labeled DCLabel String
+nickname = LabeledTCB (True %% True) "dm"
+
+emailAddress :: Labeled DCLabel String
+emailAddress = LabeledTCB ("dm" \/ "amit" \/ "deian" %% True)
+                "mazieres-smeisvhac56hquuvuqdggqe@nospam.scs.stanford.edu"
+
+personalEmail :: Labeled DCLabel String
+personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+~~~~
+
+* Say we start running with public current label (True %% True). What's the
+  current label after performing the following operations?
+
+    ~~~~ {.haskell}
+    unlabel email
+    ~~~~
+
+> - ("dm" $\vee$ "amit" $\vee$ "deian" %% True)
+
+# Current Label - Example
+
+~~~~ {.haskell}
+nickname :: Labeled DCLabel String
+nickname = LabeledTCB (True %% True) "dm"
+
+emailAddress :: Labeled DCLabel String
+emailAddress = LabeledTCB ("dm" \/ "amit" \/ "deian" %% True)
+                "mazieres-smeisvhac56hquuvuqdggqe@nospam.scs.stanford.edu"
+
+personalEmail :: Labeled DCLabel String
+personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+~~~~
+
+* Say we start running with public current label (True %% True). What's the
+  current label after performing the following operations?
+
+    ~~~~ {.haskell}
+    -- current label is ("dm" \/ "amit" \/ "deian" %% True)
+    unlabel personalEmail
+    ~~~~
+
+> - ("dm" $\wedge$ "dm" $\vee$ "amit" $\vee$ "deian" %% True)
+
+> - ("dm" %% True)
+
+# Current Label - Bonus Round!
+
+~~~~ {.haskell}
+personalEmail :: Labeled DCLabel String
+personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+
+dmPriv :: DCPriv
+dmPriv = PrivTCB $ toComponent "dm"
+~~~~
+
+* Say we start running with public current label (True %% True). What's the
+  current label after performing the following operations?
+
+    ~~~~ {.haskell}
+    -- current label is (True %% True)
+    unlabelP dmPriv personalEmail
+    ~~~~
+
+> - In last example was: ("dm" %% True)
+
+> - Because of privileges: (True %% True)
 
 # Clearance
 
