@@ -1,4 +1,4 @@
-% Intro to Haskell and LIO
+% Intro to LIO
 % Amit Levy and Deian Stefan
 %
 
