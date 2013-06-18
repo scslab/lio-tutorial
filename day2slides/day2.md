@@ -65,7 +65,7 @@
 
 * Examples of use:
 
-~~~ {.haskell}
+~~~
 *Main> let set x = Data.Set.fromList x
 *Main> MilLabel Public (set [Nuclear]) `canFlowTo`
        MilLabel TopSecret (set [Nuclear, Crypto])
@@ -117,41 +117,81 @@ MilLabel {sensitivity = Public, compartments = fromList []}
     * Slow, bug prone: need to reduce to set (even for constructor),  etc.
 
 
+# LIO privileges
 
-# `LIO` Monad
-
-* Let's define `Label`s as points on a lattice
-    (type with $\sqsubseteq$, $\sqcap$, and $\sqcup$)
-
-    ~~~~ {.haskell}
-    class (Eq l, Show l) => Label l where
-        lub :: l -> l -> l
-        glb :: l -> l -> l
-        canFlowTo :: l -> l -> Bool
-    ~~~~
-
-* Define privileges as any type with $\sqsubseteq_p$ for a given label
-      type
+* Define privileges as any type with $\sqsubseteq_p$ for a given label type
 
     ~~~~ {.haskell}
     class Label l => PrivDesc l p where
-        canFlowToPrivDesc :: p -> l -> l -> Bool
-        partDowngradePrivDesc :: p -> l -> l -> l
-        -- use p to get as close to second l as possible from first
+      canFlowToPrivDesc :: p -> l -> l -> Bool
+      partDowngradePrivDesc :: p -> l -> l -> l
+      -- Use p to get as close to second l as possible from first
     ~~~~
 
-    * But how to prevent malicious code from synthesizing privileges?
+* Example:
 
-    * Really, `PrivDesc` instance _describes_ privileges, but doesn't
-      confer any
+    ~~~~ {.haskell}
+    data MilPriv = MilPriv SimpleLabel (Set Compartment)
 
-    * Wrap them in type `Priv` and they give you power:
+    instance PrivDesc MilLabel MilPriv where
+      canFlowToPrivDesc (MilPriv sp cp) (MilLabel s0 c0) l2 =
+        let s1 = if sp >= s0
+                   then Public else s0 -- "declassify"
+            c1 = c0 `Set.difference` cp
+        in MilLabel s1 c1 `canFlowTo` l2
+    ~~~~
+    
+    * For now, let GHC complain about lack of `partDowngradePrivDesc` definition
+
+* What should the `canFlowToPrivDesc` function do?
+
+# Example use
+
+~~~
+*Main> canFlowToPrivDesc (MilPriv TopSecret (set []))
+                         (MilLabel TopSecret (set []))
+                         (MilLabel Public (set []))
+True
+*Main> canFlowToPrivDesc (MilPriv TopSecret (set []))
+                         (MilLabel Classified (set [Crypto]))
+                         (MilLabel Public (set []))
+False
+*Main> canFlowToPrivDesc (MilPriv TopSecret (set [Crypto, Nuclear]))
+                         (MilLabel TopSecret (set [Crypto]))
+                         (MilLabel Public (set []))
+True
+~~~
+
+# Controlling privilege creation
+
+* Really, `PrivDesc` instance _describes_ privileges, but doesn't
+  confer any
+
+    * Need to prevent malicious code from synthesizing privileges!
+
+* Internally, LIO privileged functions expect `Priv` types:
+
+    ~~~~ {.haskell}
+    -- Can we allocate object with label l?
+    guardAllocP :: PrivDesc l p => Priv p -> l -> LIO l ()
+    guardAllocP p l = do
+      ...
+      unless (canFlowToP p ...) $! throwLIO CurrentLabelViolation
+      ...
+
+    -- Wrapper that uses actual privileges
+    canFlowToP :: PrivDesc l p => Priv p -> l -> l -> Bool
+    canFlowToP priv = canFlowToPrivDesc (privDesc priv)
+    ~~~~
+
+* So, wrap `PrivDesc` in `Priv` and they give you power:
 
     ~~~~ {.haskell}
     newtype Priv a = PrivTCB a deriving (Show, Eq, Typeable)
     ~~~~
 
     * Use Safe Haskell to ensure only trusted code sees `PrivTCB` constructor
+
 
 # Using labels in Haskell
 
