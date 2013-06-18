@@ -356,6 +356,7 @@ mainLIO = do
 * Define labels as consisting of **2** components
   $L = \langle$Secrecy `%%` Integrity$\rangle$
 * Label components & privileges are boolean formulas over *principals*
+    * Principals are just strings (might correspond to users or web sites)
     * Represent as minimal formulas in CNF, without negation
     * Makes labels unique, operations decidable
 * $\langle S_1$ `%%` $I_1\rangle\sqsubseteq_p
@@ -364,41 +365,25 @@ mainLIO = do
     * $S_2 \wedge p \Longrightarrow S_1$, and
     * $I_1 \wedge p \Longrightarrow I_2$ (note reversed order)
 * Means you need privileges to weaken S, or to add to I
-    * $p=$`True` means no privileges, $p=$`"David"` means some privileges
+    * $p=$`True` means no privileges, $p=$`joe` means some privileges
     * $p=$`False` would confer all privileges
-* Note disjunctive clauses in CNF formulas called
-    _categories_
-
-# What is a principal?
-
-* Principals are just strings
-    * E.g., might correspond to users or web sites
-
-* Also have pseudo-principals starting with `#`
-    * By convention, system never grants privileges starting `#`
-    * Pseudo-principals let you subdivide privileges
-    * Example: $\texttt{dm}\vee\texttt{#friends}$
-      ($\texttt{dm}\Longrightarrow\texttt{dm}\vee\texttt{#friends}$,
-      but not vice versa)
-
 
 # Clearance and DC labels
 
 * Convenient to have different default $L_\mathrm{cur}$ and $C_\mathrm{cur}$
-* Set default label $L_\mathrm{def} = L_\emptyset = \langle\emptyset$ 
-  `%%` $\emptyset\rangle = \langle$True `%%` True$\rangle$
-* Set default clearance to $C_\mathrm{def} =\langle$`#clearance %%` True$\rangle$
+* Set default label $L_\mathrm{def} = L_\emptyset = \langle$True `%%` True$\rangle$
+    * Effectively the "public label"
+* Set default clearance to $C_\mathrm{def} =\langle$ False `%%` True$\rangle$
+    * Allow raising of label to read anything
 * Example policy: Everyone can read, only I can export
-    * Say my privileges are $p=$`dm`
-    * Label object with $L = \langle S$ `%%` True$\rangle$
-     where $S = $`dm` $\vee$ `#clearance`$\rangle$
+    * Say my privileges are $p=$`deian`
+    * Label object with $L = \langle$ `amit` $\vee$ `deian` `%%` True$\rangle$
 
-    * $p\Longrightarrow S$, so $L\sqsubseteq_p L_\emptyset$ and I can
+    * $p\Longrightarrow$`amit` $\vee$ `deian`, so $L\sqsubseteq_p L_\emptyset$ and I can
       export data
 
-    * Also $S\Longrightarrow$ `#clearance`, so $L\sqsubseteq
-      C_\mathrm{def}$--i.e., others can taint themselves to read data,
-      but not export it
+    * Others can taint themselves to read data, but since they don't
+      have my privilege, they cannot export it
 
 # What is the LIO Monad?
 
