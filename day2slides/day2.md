@@ -61,7 +61,7 @@
 
 * Is this lattice a total order?
 
-    * No! Consider `(TopSecret, Crypto)` and `(TopSecret, Nuclear)`
+    * No! Consider `(TopSecret, {Crypto})` and `(TopSecret, {Nuclear})`
 
 * Examples of use:
 
@@ -137,7 +137,7 @@ MilLabel {sensitivity = Public, compartments = fromList []}
 
     * The second argument dictates how compartments are removed.
 
-    * E.g., Privilege `TopSecret`@{`Crypto`,`Nuclear`} can declassify
+    * E.g., Privilege `TopSecret@{Crypto,Nuclear} can declassify
       anything.
 
 # Exercise
@@ -220,6 +220,12 @@ False
 True
 ~~~
 
+* Q: What's the problem with relying on `PrivDesc` in security-critical
+  code?
+
+> - A: Anybody can create an instance of `PrivDesc`: can't run
+    untrusted code!
+
 # Controlling privilege creation
 
 * Really, `PrivDesc` instance _describes_ privileges, but doesn't
@@ -250,8 +256,46 @@ True
 
     * Use Safe Haskell to ensure only trusted code sees `PrivTCB` constructor
 
-
 # Using labels in Haskell
+
+~~~~ {.haskell}
+instance (Label l) => Monad (LIO l) where ...
+~~~~
+
+* Introduce new _labeled IO_ monad `LIO`.  Like `RIO`, except it
+  carries two labels:
+
+    * _Current label_ restricts (with $\sqsubseteq$) where the thread
+      can write to and read from
+
+* Example: current label is `(TopSecret, {Crypto})`
+
+    * Can write to objects labeled `(TopSecret, {Crypto})` and
+      `(TopSecret, {Nuclear, Crypto})`,
+
+    * Can read from any object except those containing the `Nuclear`
+      classification.
+
+* Can we safely allow the thread with current label 
+  `(TopSecret, {Crypto})` to read a document labeled 
+  `(TopSecret, {Nuclear, Crypto})`?
+
+    * Yes! If we can guarantee that it does not leak such data.
+
+    * How? Raise the current label to `(TopSecret, {Nuclear, Crypto})`
+
+        * Now thread cannot write to objects labeled 
+          `(TopSecret, {Crypto})` anymore
+
+* Clearance: restricts how high your current label can be raised, dn
+  the label of objects you can allocate
+
+    * E.g.. if current clearance is `(TopSecret, {})` then thread
+      cannot read, write or allocate any objects that have an associated
+      compartment
+
+
+# XXX Using labels in Haskell
 
 ~~~~ {.haskell}
 instance (Label l) => Monad (LIO l) where ...
