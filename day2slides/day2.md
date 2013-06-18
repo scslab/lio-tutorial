@@ -445,22 +445,16 @@ getLabel :: Label l => LIO l l
 # Current Label - Example
 
 ~~~~ {.haskell}
-nickname :: Labeled DCLabel String
-nickname = LabeledTCB (True %% True) "dm"
-
-emailAddress :: Labeled DCLabel String
-emailAddress = LabeledTCB ("dm" \/ "amit" \/ "deian" %% True)
-                "mazieres-smeisvhac56hquuvuqdggqe@nospam.scs.stanford.edu"
-
-personalEmail :: Labeled DCLabel String
-personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+advisorNickname :: Labeled DCLabel String
+advisorNickname = LabeledTCB (True %% True) "dm"
 ~~~~
 
 * Say we start running with public current label (True %% True). What's the
   current label after performing the following operations?
 
     ~~~~ {.haskell}
-    unlabel nickname
+    -- current label is (True %% True)
+    unlabel advisorNickname
     ~~~~
 
 > - (True %% True)
@@ -468,21 +462,16 @@ personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
 # Current Label - Example
 
 ~~~~ {.haskell}
-nickname :: Labeled DCLabel String
-nickname = LabeledTCB (True %% True) "dm"
-
 emailAddress :: Labeled DCLabel String
 emailAddress = LabeledTCB ("dm" \/ "amit" \/ "deian" %% True)
                 "mazieres-smeisvhac56hquuvuqdggqe@nospam.scs.stanford.edu"
-
-personalEmail :: Labeled DCLabel String
-personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
 ~~~~
 
 * Say we start running with public current label (True %% True). What's the
   current label after performing the following operations?
 
     ~~~~ {.haskell}
+    -- current label is (True %% True)
     unlabel email
     ~~~~
 
@@ -491,13 +480,6 @@ personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
 # Current Label - Example
 
 ~~~~ {.haskell}
-nickname :: Labeled DCLabel String
-nickname = LabeledTCB (True %% True) "dm"
-
-emailAddress :: Labeled DCLabel String
-emailAddress = LabeledTCB ("dm" \/ "amit" \/ "deian" %% True)
-                "mazieres-smeisvhac56hquuvuqdggqe@nospam.scs.stanford.edu"
-
 personalEmail :: Labeled DCLabel String
 personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
 ~~~~
@@ -518,7 +500,7 @@ personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
 
 ~~~~ {.haskell}
 personalEmail :: Labeled DCLabel String
-personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+personalEmail = LabeledTCB ("dm" %% True) "iwishihadthis@scs.stanford.edu"
 
 dmPriv :: DCPriv
 dmPriv = PrivTCB $ toComponent "dm"
@@ -551,6 +533,26 @@ getClearance :: Label l => LIO l l
     * Restricts the power of covert channels
 
 * Can lower clearance to label, but raising requires privileges
+
+# Clearance Example
+
+~~~~ {.haskell}
+personalEmail :: Labeled DCLabel String
+personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+~~~~
+
+* What happens if we try to read `personalEmail` when our clearance is lower?
+
+    ~~~~ {.haskell}
+    setClearance ("amit" %% True)
+    unlabel personalEmail
+    ~~~~
+
+> - Without clearance restriction was: ("dm" %% True)
+
+> - But ("dm" %% True) `canFlowTo` ("amit" %% True) == False
+
+> - So we get "Exception: ClearanceViolation"
 
 # `Labeled` Values under the hood
 
