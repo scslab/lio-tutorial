@@ -2482,7 +2482,7 @@ readFile file = UnsafeRIO $ do
     * Both $A$ and $B$ should be concerned about the release of such a document
     * Need a label at least as restrictive as both $L_A$ and $L_B$
     * Use the least upper bound (a.k.a. *lub* or *join*) of $L_A$ and $L_B$,
-      written $L_A\sqcap L_B$
+      written $L_A\sqcup L_B$
 
 # **D**IFC is **D**ecentralized
 
