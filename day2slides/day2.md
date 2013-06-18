@@ -368,6 +368,13 @@ mainLIO = do
     * $p=$`True` means no privileges, $p=$`joe` means some privileges
     * $p=$`False` would confer all privileges
 
+* In LIO:
+
+    ~~~~ {.haskell}
+    import LIO.DCLabel
+    ~~~~ 
+
+
 # Example of label relations: Secrecy
 
 ~~~~ {.haskell}
@@ -411,6 +418,41 @@ mainLIO = do
 (True %% "alice" /\ "bob")
 ~~~~
 > - False
+
+# DCLabel lattice
+
+
+* Combining differently labeled data (`lub`)
+    
+    * $\langle S_1$ `%%` $I_1\rangle\sqcup \ \langle S_2$ `%%` $I_2\rangle=$
+      $\langle S_1 \land S_2$ `%%` $I_1 \lor I_2\rangle$
+
+    * Need consent of principals in $S_1$ and $S_2$ to observe data
+    * Principals of $I_1$ or $I_2$ could have created the data
+
+* Example 1
+
+    ~~~~ {.haskell}
+    ("alice" %% "alice") `lub` ("bob" /\ "claire" %% "bob")
+    ~~~~
+
+    > - `"alice" /\  "bob" /\ "claire" %% ("alice" \/ "bob")`
+
+* Example 2
+
+    ~~~~ {.haskell}
+    ("alice" \/ "bob" %% True) `lub` ("dan" /\ "claire" %% "bob")
+    ~~~~
+
+    > - `"claire" /\ "dan" /\ ("alice" \/ "bob") %% True`
+
+     
+* Writing to differently labeled object (`glb`)
+
+    * Dual of `lub`, not interesting in this talk
+
+    * $\langle S_1$ `%%` $I_1\rangle\sqcap \ \langle S_2$ `%%` $I_2\rangle=$
+      $\langle S_1 \lor S_2$ `%%` $I_1 \land I_2\rangle$
 
 # Clearance and DC labels
 
