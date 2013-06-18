@@ -368,6 +368,50 @@ mainLIO = do
     * $p=$`True` means no privileges, $p=$`joe` means some privileges
     * $p=$`False` would confer all privileges
 
+# Example of label relations: Secrecy
+
+~~~~ {.haskell}
+("alice" \/ "bob" %% True) `canFlowTo`
+("alice" \/ "bob" \/ "charlie" %% True)
+~~~~
+
+> - False
+
+~~~~ {.haskell}
+("alice" \/ "bob" %% True) `canFlowTo`
+("alice" /\ "dan" %% True)
+~~~~
+
+> - True
+
+~~~~ {.haskell}
+("alice" /\ "bob" %% True) `canFlowTo`
+("alice" %% True)
+~~~~
+> - False
+
+# Example of label relations: Integrity
+
+~~~~ {.haskell}
+(True %% "alice" \/ "bob") `canFlowTo`
+(True %% "alice" \/ "bob" \/ "charlie")
+~~~~
+
+> - True
+
+~~~~ {.haskell}
+(True %% "alice") `canFlowTo`
+(True %% "alice" \/ "bob")
+~~~~
+
+> - True
+
+~~~~ {.haskell}
+(True %% "alice") `canFlowTo`
+(True %% "alice" /\ "bob")
+~~~~
+> - False
+
 # Clearance and DC labels
 
 * Convenient to have different default $L_\mathrm{cur}$ and $C_\mathrm{cur}$
