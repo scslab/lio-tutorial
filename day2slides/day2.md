@@ -2,6 +2,122 @@
 % Amit Levy and Deian Stefan
 %
 
+
+# Labels
+
+* Labels are points on a lattice with
+  well defined $\sqsubseteq$, $\sqcap$, and $\sqcup$:
+
+    ~~~~ {.haskell}
+    class (Eq l, Show l) => Label l where
+        -- Relation that dictates how information flows
+        canFlowTo :: l -> l -> Bool
+        -- Least upper bound
+        lub :: l -> l -> l
+        -- Greatest lower bound
+        glb :: l -> l -> l
+    ~~~~
+
+* Example label:
+
+    ~~~~ {.haskell}
+    data SimpleLabel = Public | Classified | TopSecret deriving (Eq, Ord, Show)
+    
+    instance Label SimpleLabel where
+      x `canFlowTo` y = x <= y
+      lub = max
+      glb = min
+    ~~~~
+
+    ~~~~
+    *Main> [ Public `canFlowTo` TopSecret, TopSecret `canFlowTo` Public ]
+    [True,False]
+    *Main> [ Public `lub` TopSecret, Classified `glb` TopSecret ]
+    [TopSecret,Classified]
+    ~~~~
+
+
+# Extending SimpleLabel
+
+* This is called a _total-order_: for every label $L_1$ and $L_2$,
+  either $L_1 \sqsubseteq L_2$ or $L_2 \sqsubseteq L_1$
+
+* Extend `SimpleLabel` with compartment:
+
+    ~~~~ {.haskell}
+    import Data.Set (Set)
+
+    data Compartment = Nuclear | Crypto deriving (Eq, Ord, Show)
+
+    data MilLabel = MilLabel { sensitivity  :: SimpleLabel
+                             , compartments :: Set Compartment
+                             } deriving (Eq, Show)
+    ~~~~
+
+
+![](millattice.png)
+
+# Exercise: define the `Label` instance
+
+* Is this lattice a total order?
+
+    * No! Consider `(TopSecret, Crypto)` and `(TopSecret, Nuclear)`
+
+* Examples of use:
+
+~~~ {.haskell}
+*Main> let set x = Data.Set.fromList x
+*Main> MilLabel Public (set [Nuclear]) `canFlowTo`
+       MilLabel TopSecret (set [Nuclear, Crypto])
+True
+*Main> MilLabel Public (set [Nuclear]) `canFlowTo` 
+       MilLabel Classified (set [Crypto])
+False
+*Main> MilLabel Classified (set [Crypto]) `canFlowTo`
+       MilLabel Public (set [Nuclear])
+False
+*Main> MilLabel Classified (set [Crypto]) `glb` MilLabel Public (set [Nuclear])
+MilLabel {sensitivity = Public, compartments = fromList []}
+~~~
+
+* Hint: Start by expressing the lattice properties using set theory
+
+* Use library `Data.Set` vs. set as lists
+
+    ~~~~ {.haskell}
+    import Data.Set (Set)
+    import qualified Data.Set as Set
+    ~~~~
+
+
+# Answer
+
+* Defining the lattice properties using set theory:
+
+    * Can flow to: $(L_1,C_1) \sqsubseteq (L_2, C_2)$ if $L_1 \sqsubseteq L_2$ and $C_1 \subseteq C_2$
+    * Least upper bound: $(L_1,C_1) \sqcup (L_2, C_2) \equiv (L_1 \sqcup L_2, C_1 \cup C_2)$
+    * Greatest lower bound: $(L_1,C_1) \sqcap (L_2, C_2) \equiv (L_1 \sqcap L_2, C_1 \cap C_2)$
+
+
+* Simple translation to Haskell:
+
+    ~~~~ {.haskell}
+    instance Label MilLabel where
+      (MilLabel s1 c1) `lub` (MilLabel s2 c2) =
+        MilLabel (s1 `lub` s2) (c1 `Set.union` c2)
+
+      (MilLabel s1 c1) `glb` (MilLabel s2 c2) =
+        MilLabel (s1 `glb` s2) (c1 `Set.intersection` c2)
+
+      (MilLabel s1 c1) `canFlowTo` (MilLabel s2 c2) =
+        (s1 `canFlowTo` s2) && (c1 `Set.isSubsetOf` c2)
+    ~~~~
+
+* Why you shouldn't use lists?
+    * Slow, bug prone: need to reduce to set (even for constructor),  etc.
+
+
+
 # `LIO` Monad
 
 * Let's define `Label`s as points on a lattice
