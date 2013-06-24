@@ -727,6 +727,55 @@ Nothing
     -- Note above string the SECOND argument to notElem ^
     ~~~
 
+# Fixity
+
+* Most operators are just library functions in Haskell
+    * Very few operators reserved by language syntax (`..`, `:`, `::`,
+      `=`, `\`, `|`, `<-`, `->`, `@`, `~`, `=>`, `--`)
+    * You can go crazy and define your own operators
+    * Or even use your own definitions instead of system ones
+* Define precedence of infix operators with fixity declarations
+    * Keywords: `infixl`/`infixr`/`infix` for left/right/no
+      associativity
+    * Syntax: *infix-keyword* [0-9] *function* [, *function* ...]
+    * Allowed wherever a type declaration is allowed
+* 0 is lowest allowed fixity precedence, 9 is highest
+    * Prefix function application has fixity 10--higher than any infix
+      call
+    * Lambda abstractions, `else` clauses, and `let`...`in` clauses
+      extend as far to the right as possible (meaning they never stop
+      at any infix operator, no matter how low precedence)
+
+# Fixity of specific operators
+
+* Here is the fixity of the
+  [standard operators](http://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061):
+
+~~~ {.haskell}
+infixl 9  !!             -- This is the default when fixity unspecified
+infixr 9  .
+infixr 8  ^, ^^, ⋆⋆
+infixl 7  ⋆, /, `quot`, `rem`, `div`, `mod`  
+infixl 6  +, -           -- Unary negation "-" has this fixity, too
+infixr 5  ++             -- built-in ":" constructor has this fixity, too
+infix  4  ==, /=, <, <=, >=, >, `elem`, `notElem`
+infixr 3  &&
+infixr 2  ||
+infixl 1  >>, >>=
+infixr 1  =<<  
+infixr 0  $, $!, `seq`
+~~~
+
+* If you can't remember, use `:i` in [GHCI][GHCI]:
+
+    ~~~
+    Prelude> :i &&
+    (&&) :: Bool -> Bool -> Bool    -- Defined in GHC.Classes
+    infixr 3 &&
+    ~~~
+
+    * If GHCI doesn't specify, means default: `infixl 9`
+
 # Exercise:  Point free notation and infix functions
 
 * Consider the following function
@@ -776,55 +825,6 @@ oo f g = (.) ((.) f) g
 oo f = (.) ((.) f)
 oo = (.) . (.)
 ~~~
-
-# Fixity
-
-* Most operators are just library functions in Haskell
-    * Very few operators reserved by language syntax (`..`, `:`, `::`,
-      `=`, `\`, `|`, `<-`, `->`, `@`, `~`, `=>`, `--`)
-    * You can go crazy and define your own operators
-    * Or even use your own definitions instead of system ones
-* Define precedence of infix operators with fixity declarations
-    * Keywords: `infixl`/`infixr`/`infix` for left/right/no
-      associativity
-    * Syntax: *infix-keyword* [0-9] *function* [, *function* ...]
-    * Allowed wherever a type declaration is allowed
-* 0 is lowest allowed fixity precedence, 9 is highest
-    * Prefix function application has fixity 10--higher than any infix
-      call
-    * Lambda abstractions, `else` clauses, and `let`...`in` clauses
-      extend as far to the right as possible (meaning they never stop
-      at any infix operator, no matter how low precedence)
-
-# Fixity of specific operators
-
-* Here is the fixity of the
-  [standard operators](http://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061):
-
-~~~ {.haskell}
-infixl 9  !!             -- This is the default when fixity unspecified
-infixr 9  .
-infixr 8  ^, ^^, ⋆⋆
-infixl 7  ⋆, /, `quot`, `rem`, `div`, `mod`  
-infixl 6  +, -           -- Unary negation "-" has this fixity, too
-infixr 5  ++             -- built-in ":" constructor has this fixity, too
-infix  4  ==, /=, <, <=, >=, >, `elem`, `notElem`
-infixr 3  &&
-infixr 2  ||
-infixl 1  >>, >>=
-infixr 1  =<<  
-infixr 0  $, $!, `seq`
-~~~
-
-* If you can't remember, use `:i` in [GHCI][GHCI]:
-
-    ~~~
-    Prelude> :i &&
-    (&&) :: Bool -> Bool -> Bool    -- Defined in GHC.Classes
-    infixr 3 &&
-    ~~~
-
-    * If GHCI doesn't specify, means default: `infixl 9`
 
 # The "`infixr 0`" operators
 
