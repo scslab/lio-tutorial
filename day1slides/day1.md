@@ -910,7 +910,7 @@ factorial n0 = loop 1 n0
 
 
     ~~~
-    cabal install --hyperlink-source lio
+    cabal install --haddock-hyperlink-source lio
     ~~~
 
     * Installs packages in `$HOME/.cabal`, and records them in
