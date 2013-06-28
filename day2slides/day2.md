@@ -1,9 +1,7 @@
 % Intro to LIO
-% Amit Levy and Deian Stefan
-%
 
 
-# Labels
+# Labels in Haskell
 
 * Labels are points on a lattice with
   well defined $\sqsubseteq$, $\sqcap$, and $\sqcup$:
@@ -12,10 +10,8 @@
     class (Eq l, Show l) => Label l where
         -- Relation that dictates how information flows
         canFlowTo :: l -> l -> Bool
-        -- Least upper bound
-        lub :: l -> l -> l
-        -- Greatest lower bound
-        glb :: l -> l -> l
+        lub :: l -> l -> l -- Least upper bound
+        glb :: l -> l -> l -- Greatest lower bound
     ~~~~
 
 * Example label:
@@ -29,15 +25,24 @@
       glb = min
     ~~~~
 
-    ~~~~
-    *Main> [ Public `canFlowTo` TopSecret, TopSecret `canFlowTo` Public ]
-    [True,False]
-    *Main> [ Public `lub` TopSecret, Classified `glb` TopSecret ]
-    [TopSecret,Classified]
-    ~~~~
+# Excercise: SimpleLabel
 
+~~~~
+$ git clone https://github.com/scslab/lio-exercises.git
+~~~~
 
-# Extending SimpleLabel
+or [https://bit.ly/1295qG8](https://bit.ly/1295qG8)
+
+~~~~
+*Main> Public `canFlowTo` TopSecret
+True
+*Main> TopSecret `canFlowTo` Public 
+False
+*Main> Public `lub` TopSecret
+TopSecret
+~~~~
+
+<!--# Extending SimpleLabel
 
 * This is called a _total-order_: for every label $L_1$ and $L_2$,
   either $L_1 \sqsubseteq L_2$ or $L_2 \sqsubseteq L_1$
@@ -116,111 +121,107 @@ MilLabel {sensitivity = Public, compartments = fromList []}
 * Why you shouldn't use lists?
     * Slow, bug prone: need to reduce to set (even for constructor),  etc.
 
-
+-->
 # LIO privileges
 
-* Define privileges as any type with $\sqsubseteq_p$ for a given label type
-
-* How do we define $L_1 \sqsubseteq_p L_2$?
-
-    1. Use $p$ to downgrade $L_1$ to the lowest possible point in lattice $L_1'$
-
-    2. Check $L_1' \sqsubseteq_p L_2$
-
-* Privileges for `MilLabel`:
+* Privileges allow us to `downgrade`, rather than just upgrade labels in some
+  cases
+  
+* Lets us define a modified version of the `canFlowTo` relation,
+  called `canFlowToP`.
 
     ~~~~ {.haskell}
-    data MilPriv = MilPriv SimpleLabel (Set Compartment)
+    canFlowToP myPriv l1 l2
     ~~~~
 
-    * The first argument dictates how to downgrade sensitivity. 
+  1. Downgrade `l1` as much as possible given privilege, `p`
 
-    * The second argument dictates how compartments are removed.
+  2. Then check if `l1` `canFlowTo` `l2` normally
 
-    * E.g., Privilege `TopSecret@{Crypto,Nuclear}` can declassify
-      anything.
+* Privileges for `SimpleLabel`:
+
+    ~~~~ {.haskell}
+    data SimplePriv = SimplePriv SimpleLabel
+    ~~~~
+
+    * Argument is the highest `SimpleLabel` we can downgrade to `Public`
+
+    * E.g., Privilege `TopSecret` can declassify anything, while privilege
+      `Public` can declassify nothing
 
 # Exercise
 
 * Define `downgrade`
 
     ~~~~ {.haskell}
-    downgrade (MilPriv sp cp) (MilLabel s0 c0) =  ???
+    downgrade (SimplePriv priv) lbl =  ???
     ~~~~
 
 * Example use
 
     ~~~~
-    *Main> downgrade (MilPriv TopSecret (set []))
-                     (MilLabel TopSecret (set []))
-    MilLabel {sensitivity = Public, compartments = fromList []}
-    *Main> downgrade (MilPriv TopSecret (set []))
-                     (MilLabel Classified (set [Crypto]))
-    MilLabel {sensitivity = Public, compartments = fromList [Crypto]}
-    *Main> downgrade (MilPriv TopSecret (set [Crypto, Nuclear]))
-                     (MilLabel TopSecret (set [Crypto]))
-    MilLabel {sensitivity = Public, compartments = fromList []}
-    *Main> downgrade (MilPriv TopSecret (set [Crypto, Nuclear]))
-                     (MilLabel Classified (set [Crypto]))
-    MilLabel {sensitivity = Public, compartments = fromList []}
+    *Main> downgrade (SimplePriv TopSecret) TopSecret
+    SimpleLabel Public
+    *Main> downgrade (SimplePriv Public) Classified
+    SimpleLabel Classified
+    *Main> downgrade (SimplePriv TopSecret) Classified
+    SimpleLabel Public
     ~~~~
 
 # Answer: 
 
 ~~~~ {.haskell}
-downgrade (MilPriv sp cp) (MilLabel s0 c0) = 
-    let s1 = if sp >= s0
-               then Public else s0
-        c1 = c0 `Set.difference` cp
-    in MilLabel s1 c1
+downgrade (SimplePriv priv) lbl = 
+  if priv >= lbl then Public
+    else lbl
 ~~~~
 
 
-# Let's define $\sqsubseteq_p$ class
+# Let's define a class for `canFlowToP`
 
-* Privileges are types that are instances of the `PrivDesc` class
+* Privileges are instances of the `PrivDesc` class
 
     ~~~~ {.haskell}
     class Label l => PrivDesc l p where
-      canFlowToPrivDesc :: p -> l -> l -> Bool
-      partDowngradePrivDesc :: p -> l -> l -> l
+      canFlowToP :: p -> l -> l -> Bool
+      downgradeP :: p -> l -> l
     ~~~~
 
-* `canFlowToPrivDesc` implements $\sqsubseteq_p$
-
-* `partDowngradePrivDesc priv lcur lgoal`
+* `downgradeP priv lbl`
    
-     * Downgrade `lcur` as close to `lgoal` as possible using `priv`
+     * Downgrade `lbl` as much as possible using `priv`
      
      * We'll see where this is used later!
 
-* Define instance for `MilLabel` and `MilPriv`
+* Define instance for `SimpleLabel` and `SimplePriv`
 
     ~~~~ {.haskell}
-    instance PrivDesc MilLabel MilPriv where
-      canFlowToPrivDesc p l1 l2 = downgrade p l1 `canFlowTo` l2
-      partDowngradePrivDesc p l1 l2 = downgrade p l1 `lub` l2
+    instance PrivDesc SimpleLabel SimplePriv where
+      canFlowToP p l1 l2 = (downgradeP p l1) `canFlowTo` l2
+      downgradeP (SimplePriv priv) lbl =
+        if priv >= lbl then Public
+          else lbl
     ~~~~
     
 
 # Example use
 
 ~~~
-*Main> canFlowToPrivDesc (MilPriv TopSecret (set []))
-                         (MilLabel TopSecret (set []))
-                         (MilLabel Public (set []))
+*Main> canFlowToP (SimplePriv TopSecret)
+                  (SimpleLabel TopSecret)
+                  (SimpleLabel Public)
 True
-*Main> canFlowToPrivDesc (MilPriv TopSecret (set []))
-                         (MilLabel Classified (set [Crypto]))
-                         (MilLabel Public (set []))
+*Main> canFlowToP (SimplePriv TopSecret)
+                  (SimpleLabel Classified)
+                  (SimpleLabel Public)
+True
+*Main> canFlowToP (SimplePriv Classified)
+                  (SimpleLabel TopSecret)
+                  (SimpleLabel Public)
 False
-*Main> canFlowToPrivDesc (MilPriv TopSecret (set [Crypto, Nuclear]))
-                         (MilLabel TopSecret (set [Crypto]))
-                         (MilLabel Public (set []))
-True
 ~~~
 
-* Q: What's the problem with relying on `PrivDesc` in security-critical
+> - Q: What's the problem with relying on `PrivDesc` in security-critical
   code?
 
 > - A: Anybody can create an instance of `PrivDesc`: can't run
@@ -233,6 +234,18 @@ True
 
     * Need to prevent malicious code from synthesizing privileges!
 
+* So, wrap `PrivDesc` in `Priv` and they give you power:
+
+    ~~~~ {.haskell}
+    {-# LANGUAGE Unsafe #-}
+    newtype Priv a = PrivTCB a deriving (Show, Eq, Typeable)
+
+    privDesc :: Priv a -> a
+    privDesc (PrivTCB pd) = pd
+    ~~~~
+
+    * Use Safe Haskell to ensure only trusted code sees `PrivTCB` constructor
+
 * Internally, LIO privileged functions expect `Priv` types:
 
     ~~~~ {.haskell}
@@ -240,21 +253,10 @@ True
     guardAllocP :: PrivDesc l p => Priv p -> l -> LIO l ()
     guardAllocP p l = do
       ...
-      unless (canFlowToP p ...) $ throwLIO CurrentLabelViolation
+      unless (canFlowToP (privDesc p) ...) $ throwLIO CurrentLabelViolation
       ...
 
-    -- Wrapper that uses actual privileges
-    canFlowToP :: PrivDesc l p => Priv p -> l -> l -> Bool
-    canFlowToP priv = canFlowToPrivDesc (privDesc priv)
     ~~~~
-
-* So, wrap `PrivDesc` in `Priv` and they give you power:
-
-    ~~~~ {.haskell}
-    newtype Priv a = PrivTCB a deriving (Show, Eq, Typeable)
-    ~~~~
-
-    * Use Safe Haskell to ensure only trusted code sees `PrivTCB` constructor
 
 # Using labels in Haskell
 
@@ -268,32 +270,20 @@ instance (Label l) => Monad (LIO l) where ...
     * _Current label_ restricts (with $\sqsubseteq$) where the thread
       can write to and read from
 
-* Example: current label is `(TopSecret, {Crypto})`
+* Example: current label is `Classified`
 
-    * Can write to objects labeled `(TopSecret, {Crypto})` and
-      `(TopSecret, {Nuclear, Crypto})`,
+    * Can write to objects labeled `Classified` and `TopSecret`,
 
-    * Can read from any object except those containing the `Nuclear`
-      classification.
+    * Can read from objects labeled `Public` or `Classified, but not `Public`.
 
 * Can we safely allow the thread with current label 
-  `(TopSecret, {Crypto})` to read a document labeled 
-  `(TopSecret, {Nuclear, Crypto})`?
+    `Public` to read a document labeled 
+    `Classified`?
 
-    * Yes! If we can guarantee that it does not leak such data.
+    > - Yes! If we can guarantee that it does not leak such data.
 
-    * How? Raise the current label to `(TopSecret, {Nuclear, Crypto})`
-
-        * Now thread cannot write to objects labeled 
-          `(TopSecret, {Crypto})` anymore
-
-* Clearance: restricts how high your current label can be raised, and
-  the label of objects you can allocate
-
-    * E.g.. if the thread current clearance is `(TopSecret, {})` it
-      cannot read, write or allocate any objects that have an
-      associated compartment
-
+    > - How? Raise the current label to `Classified` -- now thread cannot write
+        to objects labeled `Public` anymore.
 
 # Labeling values
 
@@ -318,6 +308,7 @@ instance (Label l) => Monad (LIO l) where ...
       `partDowngradePrivDesc`)
     * `labelOf` returns the label of a labeled value
 
+<!--
 # Example:
 
 ~~~~ {.haskell}
@@ -347,18 +338,20 @@ mainLIO = do
 * What happens when you uncomment the commented-out line?
 
 * Exercise: what happens when you change clearance to `(TopSecret, {Crypto})`?
-
+-->
     
 
 # DC Labels
 
-* We would ideally like $L_\emptyset$ to be in middle of lattice
-* Define labels as consisting of **2** components
+* Simple labels are not very powerful
+
+* DCLabels consist of **2** components:
+
   $L = \langle$Secrecy `%%` Integrity$\rangle$
+
 * Label components & privileges are boolean formulas over *principals*
-    * Principals are just strings (might correspond to users or web sites)
-    * Represent as minimal formulas in CNF, without negation
-    * Makes labels unique, operations decidable
+    * Principals are just strings (might correspond to users)
+    * Formulas represented in CNF, without negation
 * $\langle S_1$ `%%` $I_1\rangle\sqsubseteq_p
   \ \langle S_2$ `%%` $I_2\rangle$
   iff
@@ -421,6 +414,10 @@ mainLIO = do
 
 # DCLabel lattice
 
+* Middle of the lattice is called "Public" -- 
+  $\langle True$ `%%` $True\rangle$
+
+    * Anyone can read, anyone can write
 
 * Combining differently labeled data (`lub`)
     
@@ -446,15 +443,7 @@ mainLIO = do
 
     > - `"claire" /\ "dan" /\ ("alice" \/ "bob") %% True`
 
-     
-* Writing to differently labeled object (`glb`)
-
-    * Dual of `lub`, not interesting in this talk
-
-    * $\langle S_1$ `%%` $I_1\rangle\sqcap \ \langle S_2$ `%%` $I_2\rangle=$
-      $\langle S_1 \lor S_2$ `%%` $I_1 \land I_2\rangle$
-
-
+<!--
 # Example: encoding `MilLabel` with DCLabels
 
 ~~~~ {.haskell}
@@ -516,7 +505,6 @@ nuclear = "Nuclear"
 
 
 
-
 # Clearance and DC labels
 
 * Convenient to have different default $L_\mathrm{cur}$ and $C_\mathrm{cur}$
@@ -533,6 +521,7 @@ nuclear = "Nuclear"
 
     * Others can taint themselves to read data, but since they don't
       have my privilege, they cannot export it
+-->
 
 # What is the LIO Monad?
 
@@ -615,16 +604,13 @@ emailAddress = LabeledTCB ("dm" \/ "amit" \/ "deian" %% True)
 
 ~~~~ {.haskell}
 personalEmail :: Labeled DCLabel String
-personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
+personalEmail = LabeledTCB ("dm" %% True) "iwishihadthis@scs.stanford.edu"
 ~~~~
 
-* Say we start running with public current label (True %% True). What's the
-  current label after performing the following operations?
-
-    ~~~~ {.haskell}
-    -- current label is ("dm" \/ "amit" \/ "deian" %% True)
-    unlabel personalEmail
-    ~~~~
+~~~~ {.haskell}
+-- current label is ("dm" \/ "amit" \/ "deian" %% True)
+unlabel personalEmail
+~~~~
 
 > - ("dm" $\wedge$ "dm" $\vee$ "amit" $\vee$ "deian" %% True)
 
@@ -637,7 +623,7 @@ personalEmail :: Labeled DCLabel String
 personalEmail = LabeledTCB ("dm" %% True) "iwishihadthis@scs.stanford.edu"
 
 dmPriv :: DCPriv
-dmPriv = PrivTCB $ toComponent "dm"
+dmPriv = PrivTCB $ toCNF "dm"
 ~~~~
 
 * Say we start running with public current label (True %% True). What's the
@@ -730,8 +716,8 @@ personalEmail = LabeledTCB ("dm" %% True) "dm@scs.stanford.edu"
     takeLMVar (LMVar l mvar) = guardWrite l >> ioTCB $ IO.takeMVar mvar
 
     guardWrite :: Label l => l LIO l ()
-    guardWrite l = do
-      taint l
+    guardWrite lref = do
+      taint lref
       currentLabel <- getLabel
       clearance <- getClearance
       unless (canFlowTo currentLabel lref) $! throwLIO CurrentLabelViolation
@@ -753,7 +739,7 @@ forkLIO :: LIO l () -> LIO l ()
     ~~~~ {.haskell}
     liomain :: LIO DCLabel ()
     liomain = do
-      secretVar <- newEmptyLMVar ("alice" %% True)
+      secretVar <- newEmptyLMVarP allPrivTCB ("alice" %% True)
       forkLIO $ do
         taint $ "alice" %% True
         putLMVar secretVar "Please do not share"
@@ -761,8 +747,8 @@ forkLIO :: LIO l () -> LIO l ()
       forkLIO $ do
         taint $ "bob" %% True
         logP bobPriv "I'll wait for a message from Alice"
-        secret <- takeLMVar passwordVar
-        logP bobPriv password -- This will fail!
+        secret <- takeLMVarP bobPriv secretVar
+        logP bobPriv secret -- This will fail!
     ~~~~
 
 # Miscellany
