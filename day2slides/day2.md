@@ -274,7 +274,7 @@ instance (Label l) => Monad (LIO l) where ...
 
     * Can write to objects labeled `Classified` and `TopSecret`,
 
-    * Can read from objects labeled `Public` or `Classified, but not `Public`.
+    * Can read from objects labeled `Public` or `Classified`, but not `TopSecret`.
 
 * Can we safely allow the thread with current label 
     `Public` to read a document labeled 
